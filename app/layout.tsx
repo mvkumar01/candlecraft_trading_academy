@@ -13,19 +13,19 @@ export async function generateMetadata(): Promise<Metadata> {
   const origin = `${protocol}://${host}`;
 
   return {
-    title: "Candlecraft — Learn trading by doing",
-    description: "An interactive trading school where every lesson is a market decision.",
+    title: "Trading Academy — Learn markets by doing",
+    description: "A complete interactive trading course for Indian markets, from foundations to systematic trading.",
     openGraph: {
-      title: "Candlecraft — Learn trading by doing",
-      description: "Read the chart. Make the call. Plan the trade. Learn from what happens next.",
+      title: "Trading Academy — Learn markets by doing",
+      description: "Learn NIFTY, options, risk, OI and systematic trading through interactive decisions and simulations.",
       type: "website",
-      images: [{ url: `${origin}/og.png`, width: 1200, height: 630, alt: "Candlecraft interactive trading education" }],
+      images: [{ url: `${origin}/og-v2.png`, width: 1200, height: 630, alt: "Trading Academy interactive Indian-market education" }],
     },
     twitter: {
       card: "summary_large_image",
-      title: "Candlecraft — Learn trading by doing",
-      description: "Every lesson is a market decision.",
-      images: [`${origin}/og.png`],
+      title: "Trading Academy — Learn markets by doing",
+      description: "A complete interactive trading school for Indian markets.",
+      images: [`${origin}/og-v2.png`],
     },
   };
 }

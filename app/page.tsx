@@ -1,263 +1,144 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { PRODUCT_NAME, allLessons, badges, course, labs, masteryTopics, supportedBlockTypes, type CourseLevel, type Lesson } from "../lib/curriculum";
 
-type Prediction = "long" | "short" | "wait" | null;
+type Page = "home" | "learn" | "labs" | "review" | "progress" | "content" | "lesson" | "lab";
+type PersistedState = { completed: string[]; xp: number; mastery: Record<string, number>; devMode: boolean; currentLessonId: string; onboarding: boolean; familiarity?: string };
 
-type Candle = {
-  open: number;
-  high: number;
-  low: number;
-  close: number;
-  volume: number;
-};
+const initialMastery = Object.fromEntries(masteryTopics.map((topic, index) => [topic, 18 + ((index * 11) % 55)]));
+const defaultState: PersistedState = { completed: ["FND-MKT-001", "FND-MKT-002", "FND-MKT-003"], xp: 75, mastery: initialMastery, devMode: false, currentLessonId: "FND-MKT-004", onboarding: false };
 
-const candles: Candle[] = [
-  { open: 178.2, high: 179.4, low: 177.6, close: 178.9, volume: 34 },
-  { open: 178.9, high: 180.2, low: 178.4, close: 179.8, volume: 41 },
-  { open: 179.8, high: 180.4, low: 178.8, close: 179.1, volume: 32 },
-  { open: 179.1, high: 180.8, low: 178.7, close: 180.3, volume: 46 },
-  { open: 180.3, high: 181.1, low: 179.7, close: 180.7, volume: 37 },
-  { open: 180.7, high: 181.3, low: 179.9, close: 180.1, volume: 31 },
-  { open: 180.1, high: 181.5, low: 179.8, close: 181.2, volume: 44 },
-  { open: 181.2, high: 182.3, low: 180.7, close: 181.9, volume: 48 },
-  { open: 181.9, high: 182.4, low: 180.8, close: 181.2, volume: 35 },
-  { open: 181.2, high: 182.8, low: 180.9, close: 182.4, volume: 52 },
-  { open: 182.4, high: 183.1, low: 181.8, close: 182.1, volume: 40 },
-  { open: 182.1, high: 183.4, low: 181.6, close: 183.0, volume: 55 },
-  { open: 183.0, high: 183.7, low: 182.2, close: 182.7, volume: 39 },
-  { open: 182.7, high: 184.0, low: 182.3, close: 183.6, volume: 51 },
-  { open: 183.6, high: 184.2, low: 182.8, close: 183.1, volume: 36 },
-  { open: 183.1, high: 184.3, low: 182.7, close: 183.9, volume: 47 },
-  { open: 183.9, high: 184.5, low: 183.1, close: 183.4, volume: 34 },
-  { open: 183.4, high: 184.6, low: 183.0, close: 184.1, volume: 45 },
-  { open: 184.1, high: 184.7, low: 183.4, close: 183.7, volume: 38 },
-  { open: 183.7, high: 184.8, low: 183.2, close: 184.3, volume: 49 },
-  { open: 184.3, high: 184.9, low: 183.5, close: 183.9, volume: 43 },
-  { open: 183.9, high: 185.0, low: 183.6, close: 184.6, volume: 58 },
-  { open: 184.6, high: 187.2, low: 184.4, close: 186.8, volume: 92 },
-  { open: 186.8, high: 188.1, low: 186.2, close: 187.5, volume: 84 },
-  { open: 187.5, high: 188.0, low: 186.7, close: 187.1, volume: 60 },
-  { open: 187.1, high: 189.0, low: 186.8, close: 188.6, volume: 76 },
-  { open: 188.6, high: 189.4, low: 187.8, close: 188.1, volume: 64 },
-  { open: 188.1, high: 190.2, low: 187.9, close: 189.7, volume: 82 },
-  { open: 189.7, high: 190.1, low: 188.9, close: 189.3, volume: 53 },
-  { open: 189.3, high: 191.2, low: 189.1, close: 190.8, volume: 71 },
+const navItems: { page: Page; label: string; icon: string }[] = [
+  { page: "home", label: "Home", icon: "⌂" }, { page: "learn", label: "Learn", icon: "◎" }, { page: "labs", label: "Labs", icon: "⌁" }, { page: "review", label: "Review", icon: "↻" }, { page: "progress", label: "Progress", icon: "▥" },
 ];
 
-const modules = [
-  { icon: "⌁", title: "Price Action", lessons: "4 / 7", active: true },
-  { icon: "◫", title: "Risk First", lessons: "2 / 6" },
-  { icon: "↗", title: "Trend Systems", lessons: "0 / 8" },
-  { icon: "◎", title: "Trade Psychology", lessons: "0 / 5" },
-];
+function masteryLabel(value: number) { return value >= 85 ? "MASTERED" : value >= 68 ? "STRONG" : value >= 45 ? "DEVELOPING" : value >= 22 ? "LEARNING" : "NEW"; }
+function levelProgress(level: CourseLevel, completed: Set<string>) { const lessons = level.modules.flatMap((module) => module.lessons); return Math.round((lessons.filter((lesson) => completed.has(lesson.id)).length / lessons.length) * 100); }
 
-const lessonSteps = ["Read the setup", "Make a call", "Plan the trade", "Watch it play", "Review"];
+function MiniMarket({ tone = "up" }: { tone?: "up" | "range" | "down" }) {
+  const values = tone === "up" ? [26, 33, 30, 43, 38, 52, 49, 61, 58, 72, 69, 84] : tone === "down" ? [82, 74, 76, 65, 69, 55, 58, 46, 49, 35, 39, 28] : [44, 58, 38, 54, 43, 61, 40, 56, 45, 59, 42, 53];
+  return <div className="mini-market" aria-label={`${tone} synthetic NIFTY chart`}>{values.map((value, index) => <i key={index} className={index % 3 === 1 ? "red" : "green"} style={{ height: `${value}%` }} />)}<span>NIFTY · 15M</span></div>;
+}
 
-function MarketChart({ revealed, prediction }: { revealed: number; prediction: Prediction }) {
-  const min = 176;
-  const max = 192;
-  const visible = candles.slice(0, revealed);
+function Sidebar({ page, setPage, state, setState, open, setOpen }: { page: Page; setPage: (page: Page) => void; state: PersistedState; setState: React.Dispatch<React.SetStateAction<PersistedState>>; open: boolean; setOpen: (open: boolean) => void }) {
+  return <aside className={`sidebar ${open ? "open" : ""}`}>
+    <div className="brand"><span className="brand-glyph">TA</span><div><b>Trading</b><em>Academy</em></div></div>
+    <button className="nav-close" onClick={() => setOpen(false)} aria-label="Close menu">×</button>
+    <nav aria-label="Primary">
+      {navItems.map((item) => <button key={item.page} className={page === item.page || (page === "lesson" && item.page === "learn") || (page === "lab" && item.page === "labs") ? "active" : ""} onClick={() => { setPage(item.page); setOpen(false); }}><span>{item.icon}</span>{item.label}</button>)}
+    </nav>
+    <div className="sidebar-rule" />
+    <button className={`review-entry ${page === "content" ? "active" : ""}`} onClick={() => { setPage("content"); setOpen(false); }}><span>◇</span><div><b>Content Review</b><small>{allLessons.length} lesson drafts</small></div></button>
+    <div className="dev-control"><div><b>Development Mode</b><small>{state.devMode ? "All content unlocked" : "Learner progression"}</small></div><button role="switch" aria-checked={state.devMode} className={state.devMode ? "on" : ""} onClick={() => setState((current) => ({ ...current, devMode: !current.devMode }))}><i /></button></div>
+    <div className="sidebar-summary"><span>LEVEL 1</span><b>Trading Foundations</b><div><i style={{ width: `${levelProgress(course[0], new Set(state.completed))}%` }} /></div><small>{levelProgress(course[0], new Set(state.completed))}% complete</small></div>
+    <div className="user-row"><span>VK</span><div><b>Market Learner</b><small>{state.xp} XP · 7 day streak</small></div></div>
+  </aside>;
+}
 
-  return (
-    <div className="chart-shell" aria-label={`Candlestick chart with ${revealed} visible candles`}>
-      <div className="chart-toolbar">
-        <div className="ticker-id">
-          <span className="ticker-mark">N</span>
-          <div><strong>NOVA</strong><small>Nova Energy · 15m</small></div>
-        </div>
-        <div className="quote"><strong>${visible.at(-1)?.close.toFixed(2)}</strong><span>+1.28%</span></div>
-        <div className="chart-tools" aria-hidden="true"><span>＋</span><span>⌖</span><span>▦</span></div>
-      </div>
+function Header({ page, state, setOpen }: { page: Page; state: PersistedState; setOpen: (open: boolean) => void }) {
+  const labels: Record<Page, string> = { home: "Course dashboard", learn: "Learning path", labs: "Interactive labs", review: "Recommended review", progress: "Your progress", content: "Creator workspace", lesson: "Interactive lesson", lab: "Practice lab" };
+  return <header className="topbar"><button className="menu-button" onClick={() => setOpen(true)} aria-label="Open menu">☰</button><div><span>{labels[page]}</span><b>{PRODUCT_NAME}</b></div><div className="top-stats"><span><i>◆</i><b>7</b><small>day streak</small></span><span><i>✦</i><b>{state.xp}</b><small>XP earned</small></span><button aria-label="Notifications">◌<i /></button></div></header>;
+}
 
-      <div className="plot-area">
-        <div className="price-grid">
-          {[192, 188, 184, 180, 176].map((price) => <span key={price}>${price}</span>)}
-        </div>
-        <div className="level-line resistance"><b>RESISTANCE</b><span>$185.00</span></div>
-        <div className="level-line support"><b>SUPPORT</b><span>$179.80</span></div>
-        {prediction && <div className={`prediction-flag ${prediction}`}>{prediction === "long" ? "YOUR CALL ↑" : prediction === "short" ? "YOUR CALL ↓" : "YOUR CALL · WAIT"}</div>}
-        <div className="candles">
-          {visible.map((candle, index) => {
-            const up = candle.close >= candle.open;
-            const top = ((max - candle.high) / (max - min)) * 100;
-            const height = ((candle.high - candle.low) / (max - min)) * 100;
-            const bodyTop = ((max - Math.max(candle.open, candle.close)) / (max - min)) * 100;
-            const bodyHeight = Math.max(((Math.abs(candle.close - candle.open)) / (max - min)) * 100, 1.2);
-            const style = { "--wick-top": `${top}%`, "--wick-height": `${height}%`, "--body-top": `${bodyTop}%`, "--body-height": `${bodyHeight}%`, "--volume": `${candle.volume}%` } as React.CSSProperties;
-            return <div className={`candle-column ${up ? "up" : "down"} ${index >= 22 ? "revealed" : ""}`} style={style} key={index}><i className="wick"/><i className="body"/><i className="volume"/></div>;
-          })}
-          {revealed === 22 && <div className="future-mask"><span>?</span><small>FUTURE HIDDEN</small></div>}
-        </div>
-        <div className="time-axis"><span>10:00</span><span>11:30</span><span>13:00</span><span>14:30</span></div>
-      </div>
+function Onboarding({ complete }: { complete: (familiarity: string) => void }) {
+  return <div className="onboarding-backdrop"><section className="onboarding"><div className="onboarding-chart"><MiniMarket/><div className="signal-chip">DECIDE → ACT → REVIEW</div></div><div className="onboarding-copy"><span className="kicker">WELCOME TO TRADING ACADEMY</span><h1>Learn markets<br/><em>by doing.</em></h1><p>Short decisions, interactive charts and simulated trades—built around Indian markets.</p><h2>How familiar are you with trading?</h2><div className="familiarity-grid">{["New to markets", "Know the basics", "Trade occasionally", "Experienced trader"].map((choice, index) => <button onClick={() => complete(choice)} key={choice}><i>{index + 1}</i><span><b>{choice}</b><small>{["Start with market foundations", "Begin with charts and risk", "Explore applied trading", "Review any advanced topic"][index]}</small></span><em>→</em></button>)}</div><small className="onboarding-note">Your choice personalises the starting recommendation. It never skips prerequisites.</small></div></section></div>;
+}
+
+function Dashboard({ state, openLesson, setPage, openLab }: { state: PersistedState; openLesson: (lesson: Lesson) => void; setPage: (page: Page) => void; openLab: (name: string) => void }) {
+  const completed = new Set(state.completed);
+  const current = allLessons.find((lesson) => lesson.id === state.currentLessonId) ?? allLessons[3];
+  const overall = Math.max(1, Math.round((completed.size / allLessons.length) * 100));
+  const weak = Object.entries(state.mastery).sort((a,b) => a[1] - b[1]).slice(0, 4);
+  return <div className="page-shell dashboard-page">
+    <section className="welcome-row"><div><span className="kicker">GOOD MORNING, MARKET LEARNER</span><h1>Build skill.<br/><em>Protect capital.</em></h1><p>Your next session is ready. Four focused minutes—one better market decision.</p></div><div className="course-dial" style={{ "--progress": `${overall * 3.6}deg` } as React.CSSProperties}><div><b>{overall}%</b><small>COURSE COMPLETE</small></div></div></section>
+    <section className="continue-card"><div className="continue-chart"><MiniMarket/><div className="chart-label">SYNTHETIC SCENARIO · NO LIVE DATA</div></div><div className="continue-copy"><div className="continue-meta"><span>CONTINUE LEARNING</span><b>{current.id}</b></div><h2>{current.title}</h2><p>{current.description}</p><div className="lesson-facts"><span>{current.module}</span><span>{current.estimatedMinutes} min</span><span>+{current.xp} XP</span></div><button className="button-primary" onClick={() => openLesson(current)}>Resume lesson <span>→</span></button></div></section>
+    <div className="dashboard-grid">
+      <section className="panel level-overview"><div className="panel-head"><div><span className="kicker">LEARNING PATH</span><h2>Three levels. One operating system.</h2></div><button className="text-button" onClick={() => setPage("learn")}>View full curriculum →</button></div>{course.map((level) => { const progress = levelProgress(level, completed); const locked = level.number > 1 && !state.devMode; return <button className={`level-row ${locked ? "locked" : ""}`} key={level.code} onClick={() => !locked && setPage("learn")}><span className="level-number">0{level.number}</span><div><b>{level.title}</b><small>{level.modules.length} modules · {level.modules.flatMap(m => m.lessons).length} lessons</small><div className="track"><i style={{ width: `${progress}%` }}/></div></div><strong>{locked ? "LOCKED" : `${progress}%`}</strong></button>})}</section>
+      <section className="panel mastery-overview"><div className="panel-head"><div><span className="kicker">TOPIC MASTERY</span><h2>Confidence, not false precision.</h2></div><button className="text-button" onClick={() => setPage("progress")}>Details →</button></div><div className="mastery-radar">{Object.entries(state.mastery).slice(0, 6).map(([topic, value]) => <div key={topic}><span>{topic}</span><div><i style={{ width: `${value}%` }}/></div><b>{masteryLabel(value)}</b></div>)}</div></section>
+      <section className="panel review-overview"><div className="panel-head"><div><span className="kicker">RECOMMENDED REVIEW</span><h2>Strengthen the weak links.</h2></div></div>{weak.map(([topic, value], index) => <button className="review-row" key={topic} onClick={() => setPage("review")}><span>{String(index + 1).padStart(2,"0")}</span><div><b>{topic}</b><small>{masteryLabel(value)} · 3 minute drill</small></div><em>→</em></button>)}</section>
+      <section className="panel labs-overview"><div className="panel-head"><div><span className="kicker">OPEN LABS</span><h2>Experiment without risking capital.</h2></div><button className="text-button" onClick={() => setPage("labs")}>All labs →</button></div><div className="quick-labs">{["Risk Simulator","Option Chain Lab","Backtesting Lab"].map((lab,index) => <button key={lab} onClick={() => openLab(lab)}><i>{["%","OI","∿"][index]}</i><span><b>{lab}</b><small>{["Position sizing & ruin","Read positioning in context","Test on unseen data"][index]}</small></span><em>↗</em></button>)}</div></section>
     </div>
-  );
+  </div>;
+}
+
+function LearnPage({ state, openLesson, openLab }: { state: PersistedState; openLesson: (lesson: Lesson) => void; openLab: (name: string) => void }) {
+  const [levelCode, setLevelCode] = useState<"FND"|"APP"|"PRO">("FND");
+  const [openModule, setOpenModule] = useState(0);
+  const completed = new Set(state.completed);
+  const level = course.find((item) => item.code === levelCode)!;
+  return <div className="page-shell learn-page"><div className="page-title"><div><span className="kicker">COMPLETE CURRICULUM · {allLessons.length} LESSONS</span><h1>Learning <em>path</em></h1><p>Progress from intuitive market understanding to probabilistic and systematic reasoning.</p></div><div className="dev-banner">{state.devMode ? "DEV MODE · ALL UNLOCKED" : "SEQUENTIAL PROGRESSION"}</div></div>
+    <div className="level-tabs">{course.map((item) => <button key={item.code} className={levelCode === item.code ? "active" : ""} onClick={() => { setLevelCode(item.code); setOpenModule(0); }}><span>LEVEL {item.number}</span><b>{item.title}</b><small>{item.modules.length} modules · {item.modules.flatMap(m => m.lessons).length} lessons</small></button>)}</div>
+    <section className="level-intro"><div><span>LEVEL {level.number}</span><h2>{level.title}</h2><p>{level.subtitle}</p></div><div><b>{levelProgress(level, completed)}%</b><span>LEVEL COMPLETE</span></div></section>
+    <div className="module-stack">{level.modules.map((module, moduleIndex) => { const open = moduleIndex === openModule; const completeCount = module.lessons.filter((lesson) => completed.has(lesson.id)).length; const moduleLocked = !state.devMode && level.number > 1; return <article className={`module-card ${open ? "open" : ""} ${moduleLocked ? "locked" : ""}`} key={module.code}><button className="module-head" onClick={() => !moduleLocked && setOpenModule(open ? -1 : moduleIndex)}><span className="module-index">{String(moduleIndex + 1).padStart(2,"0")}</span><div><small>{level.code}-{module.code}</small><h3>{module.title}</h3><p>{module.description}</p></div><div className="module-count"><b>{completeCount}/{module.lessons.length}</b><span>{moduleLocked ? "LOCKED" : open ? "−" : "+"}</span></div></button>{open && !moduleLocked && <div className="lesson-path"><div className="lesson-path-line" />{module.lessons.map((lesson, lessonIndex) => { const done = completed.has(lesson.id); const available = state.devMode || lessonIndex === 0 || completed.has(module.lessons[lessonIndex-1]?.id); return <button key={lesson.id} className={`${done ? "done" : ""} ${available ? "available" : "locked"}`} disabled={!available} onClick={() => openLesson(lesson)}><i>{done ? "✓" : available ? lessonIndex + 1 : "·"}</i><span><small>{state.devMode ? `${lesson.id} · DRAFT` : `${lesson.estimatedMinutes} MIN · +${lesson.xp} XP`}</small><b>{lesson.title}</b></span><em>{available ? "→" : "LOCKED"}</em></button>})}{module.lab && <button className="module-lab" onClick={() => openLab(module.lab!)}><i>LAB</i><span><b>{module.lab}</b><small>Apply this module through simulation</small></span><em>OPEN →</em></button>}<div className="module-assessment"><span>MODULE CHALLENGE</span><b>Application assessment</b><small>30 XP · unlocks after all lessons</small></div></div>}</article>})}</div>
+    <section className="assessment-banner"><span>LEVEL ASSESSMENT</span><h2>{level.assessment}</h2><p>Application-first scenarios across every module. Definitions alone won’t be enough.</p><button disabled={!state.devMode && levelProgress(level, completed) < 100}>{state.devMode ? "Preview assessment" : "Complete the level to unlock"}</button></section>
+  </div>;
+}
+
+function LessonPage({ lesson, state, setState, openLesson, back }: { lesson: Lesson; state: PersistedState; setState: React.Dispatch<React.SetStateAction<PersistedState>>; openLesson: (lesson: Lesson) => void; back: () => void }) {
+  const [step, setStep] = useState(0); const [answer, setAnswer] = useState<number|null>(null); const [confidence, setConfidence] = useState(55); const [revealed, setRevealed] = useState(false);
+  const index = allLessons.findIndex((item) => item.id === lesson.id); const completed = state.completed.includes(lesson.id); const block = lesson.blocks[step];
+  const choices = lesson.title.toLowerCase().includes("rsi") ? ["NIFTY must rise next", "Buy immediately", "Recent downside momentum is unusually strong", "Price is guaranteed oversold"] : lesson.title.toLowerCase().includes("open interest") || lesson.title.includes("OI") ? ["A guaranteed price direction", "Positioning evidence that needs price, premium and regime context", "Always support or resistance", "The number of completed trades today"] : ["Treat it as a guaranteed signal", "Use it as evidence inside context and a risk plan", "Ignore market structure", "Increase leverage until the idea works"];
+  const correct = lesson.title.toLowerCase().includes("rsi") ? 2 : 1;
+  function completeLesson() { setState((current) => { if (current.completed.includes(lesson.id)) return current; const mastery = { ...current.mastery }; lesson.masteryTags.forEach((tag) => mastery[tag] = Math.min(95, (mastery[tag] ?? 15) + (answer === correct ? 8 : 3))); return { ...current, completed: [...current.completed, lesson.id], xp: current.xp + lesson.xp, mastery, currentLessonId: allLessons[index + 1]?.id ?? lesson.id }; }); }
+  return <div className="lesson-view"><div className="lesson-top"><button className="back-button" onClick={back}>← Back to path</button><div className="lesson-progress"><span>LESSON {lesson.order}</span><div><i style={{ width: `${((step + 1)/lesson.blocks.length)*100}%` }}/></div><b>{step + 1} / {lesson.blocks.length}</b></div><span className="lesson-id">{lesson.id}</span></div>
+    <div className="lesson-layout"><aside className="lesson-outline"><span className="kicker">{lesson.level}</span><h3>{lesson.module}</h3>{lesson.blocks.map((item, i) => <button key={i} className={i === step ? "active" : i < step ? "done" : ""} onClick={() => i <= step && setStep(i)}><i>{i < step ? "✓" : i + 1}</i><span>{item.type.replace("_"," ")}</span></button>)}<div className="lesson-tags"><span>MASTERY TAGS</span>{lesson.masteryTags.map((tag) => <b key={tag}>{tag}</b>)}</div></aside>
+      <section className="lesson-stage"><div className="stage-meta"><span>{block.type.replace("_"," ").toUpperCase()}</span><b>{lesson.estimatedMinutes} MIN · +{lesson.xp} XP</b></div><h1>{step === 0 ? lesson.title : block.title ?? (step === 2 ? "Make the call" : step === 3 ? "Test the idea" : "What carries forward?")}</h1><p className="stage-lead">{block.body ?? block.prompt}</p>
+        {step === 0 && <div className="hook-card"><span>QUESTION / HOOK</span><h2>What would change in your decision?</h2><p>{lesson.description}</p><div className="objective-list">{lesson.learningObjectives.map((objective,index) => <div key={objective}><i>{index+1}</i><span>{objective}</span></div>)}</div></div>}
+        {step === 1 && <div className="visual-explainer"><div className="visual-chart"><MiniMarket tone={lesson.levelCode === "PRO" ? "range" : "up"}/><span className="chart-callout">EVIDENCE ≠ CERTAINTY</span></div><div><span>CONCEPT</span><h2>Read the evidence, then define the risk.</h2><p>In this synthetic NIFTY scenario, the concept changes the quality of the hypothesis—not the certainty of the outcome.</p><div className="context-check"><b>Price context</b><span>Where is the market relative to structure?</span><b>Decision context</b><span>What would invalidate the idea?</span><b>Risk context</b><span>How much capital is exposed if wrong?</span></div></div></div>}
+        {step === 2 && <div className="quiz-block"><div className="scenario-strip"><span>NIFTY SCENARIO</span><b>{lesson.assessment.prompt}</b></div>{choices.map((choice,i) => <button key={choice} className={answer === i ? "selected" : ""} onClick={() => {setAnswer(i); setRevealed(false);}}><i>{String.fromCharCode(65+i)}</i><span>{choice}</span></button>)}<label>How confident are you? <b>{confidence}%</b><input type="range" min="20" max="100" value={confidence} onChange={(e) => setConfidence(Number(e.target.value))}/></label><button className="button-primary" disabled={answer === null} onClick={() => setRevealed(true)}>Check reasoning <span>→</span></button>{revealed && <div className={`answer-feedback ${answer === correct ? "correct" : "incorrect"}`}><b>{answer === correct ? "Good reasoning." : "Reframe the evidence."}</b><p>{answer === correct ? "You kept context and uncertainty in the decision. That is the transferable skill." : "The concept is useful evidence, but it cannot guarantee the next price move. Look for the contextual answer."}</p></div>}</div>}
+        {step === 3 && <div className="challenge-block"><div><span>MINI CHALLENGE</span><h2>Size the uncertainty.</h2><p>Virtual capital</p><b>₹1,00,000</b></div><div><label>Risk per trade <b>{(confidence/100*1.5).toFixed(2)}%</b><input type="range" min="20" max="100" value={confidence} onChange={(e) => setConfidence(Number(e.target.value))}/></label><div className="risk-output"><span>Maximum planned loss<b>₹{Math.round(100000 * (confidence/100*0.015)).toLocaleString("en-IN")}</b></span><span>Evidence quality<b>{confidence > 75 ? "High—not certain" : confidence > 45 ? "Moderate" : "Low"}</b></span></div><p>Conviction can shape selectivity. It should never remove the loss limit.</p></div></div>}
+        {step === 4 && <div className="takeaway-card"><span>TAKEAWAY</span><h2>{block.body}</h2><p>Professional thinking asks: What is the evidence? What else could explain it? Where am I wrong? How much do I lose if I am wrong?</p><div className="takeaway-rule"><b>PROCESS RULE</b><span>Hypothesis → evidence → invalidation → position size → review</span></div>{completed && <div className="already-complete">✓ Lesson complete · XP already awarded</div>}</div>}
+        <div className="lesson-actions"><button onClick={() => step ? setStep(step-1) : back()}>{step ? "← Previous" : "← Back"}</button>{step < lesson.blocks.length-1 ? <button className="button-primary" onClick={() => setStep(step+1)} disabled={step === 2 && !revealed}>Continue <span>→</span></button> : <button className="button-primary" onClick={() => { completeLesson(); if (allLessons[index+1]) openLesson(allLessons[index+1]); }}> {completed ? "Next lesson" : "Mark complete & continue"} <span>→</span></button>}</div>
+      </section></div>
+    <div className="lesson-footer-nav"><button disabled={!allLessons[index-1]} onClick={() => allLessons[index-1] && openLesson(allLessons[index-1])}>← Previous lesson</button><button onClick={() => allLessons[index+1] && openLesson(allLessons[index+1])} disabled={!allLessons[index+1]}>Next lesson →</button></div>
+  </div>;
+}
+
+function LabsPage({ openLab }: { openLab: (lab: string) => void }) {
+  const categories = ["Foundations", "Risk & execution", "Derivatives", "Professional research"];
+  return <div className="page-shell"><div className="page-title"><div><span className="kicker">20 INTERACTIVE ENVIRONMENTS</span><h1>Trading <em>Labs</em></h1><p>Change the inputs. Observe the consequences. Build intuition without risking capital.</p></div><div className="synthetic-badge">SYNTHETIC DATA · SAFE PRACTICE</div></div><div className="lab-categories">{categories.map((category,categoryIndex) => <section key={category}><div className="category-title"><span>0{categoryIndex+1}</span><h2>{category}</h2></div><div className="lab-grid">{labs.slice(categoryIndex*5, categoryIndex*5+5).map((lab,index) => <button key={lab} className="lab-card" onClick={() => openLab(lab)}><div className="lab-visual"><i>{["╱╲","▤","HH","RSI","%","∿","₹","C/P","Δ","Γ","OI","↕","IV","+","δ","R","ƒ(x)","A/B","!","E"][categoryIndex*5+index]}</i><span>{category}</span></div><div><small>LAB {String(categoryIndex*5+index+1).padStart(2,"0")}</small><h3>{lab}</h3><p>{lab.includes("Risk") ? "See how sizing changes survival and drawdown." : lab.includes("OI") || lab.includes("Option Chain") ? "Classify positioning without deterministic shortcuts." : lab.includes("Backtest") || lab.includes("Overfitting") ? "Separate attractive history from robust evidence." : "Manipulate the market inputs and test your reasoning."}</p><span className="open-lab">Open Lab →</span></div></button>)}</div></section>)}</div></div>;
+}
+
+function LabView({ name, back }: { name: string; back: () => void }) {
+  const [a,setA] = useState(name.includes("Risk") ? 1 : name.includes("Option") || name.includes("Greek") || name.includes("Delta") || name.includes("Volatility") ? 22400 : 100); const [b,setB] = useState(name.includes("Risk") ? 48 : name.includes("Option") || name.includes("Greek") || name.includes("Delta") || name.includes("Volatility") ? 22500 : 60); const [c,setC] = useState(name.includes("Risk") ? 1.6 : name.includes("Option") || name.includes("Greek") || name.includes("Delta") || name.includes("Volatility") ? 18 : 40); const [choice,setChoice] = useState<string|null>(null); const [round,setRound] = useState(0); const [score,setScore] = useState(0); const [tested,setTested] = useState(false);
+  const oiRounds = [{p:"↑",o:"↑",answer:"Long buildup"},{p:"↓",o:"↑",answer:"Short buildup"},{p:"↑",o:"↓",answer:"Short covering"},{p:"↓",o:"↓",answer:"Long unwinding"}]; const isRisk = name.includes("Risk") || name.includes("Position Sizing"); const isOption = /Option|Greek|Delta|Volatility|Payoff|Hedging/.test(name); const isOI = name.includes("OI Classification"); const isBacktest = /Backtesting|Overfitting|Strategy Comparison|Strategy Builder/.test(name); const isCandle = name.includes("Candlestick"); const isOrder = name.includes("Order Book");
+  const delta = Math.max(.08,Math.min(.92,.5+(a-b)/700+(30-c)/180)); const premium = Math.max(18, Math.round(Math.max(0,a-b)*.55 + c*4.2));
+  const equity = Array.from({length:18},(_,i) => Math.max(22, 50 + Math.sin(i*1.7)*a*2 + i*(b-42)/12));
+  function answerOI(item:string) { if(choice) return; setChoice(item); if(item === oiRounds[round%4].answer) setScore(score+1); }
+  return <div className="page-shell lab-view"><button className="back-button" onClick={back}>← All Labs</button><div className="lab-title"><div><span className="kicker">INTERACTIVE LAB · SYNTHETIC DATA</span><h1>{name}</h1><p>Change inputs, make a call, then inspect the result. No live data. No real money.</p></div><div className="lab-score"><span>SESSION SCORE</span><b>{score * 25}</b></div></div>
+    {isRisk && <div className="lab-workbench"><section className="lab-controls"><h2>Simulation controls</h2><label>Risk per trade <b>{a}%</b><input type="range" min="0.5" max="10" step="0.5" value={a} onChange={e=>setA(Number(e.target.value))}/></label><label>Win probability <b>{b}%</b><input type="range" min="25" max="70" value={b} onChange={e=>setB(Number(e.target.value))}/></label><label>Average reward / risk <b>{c.toFixed(1)}R</b><input type="range" min="0.5" max="3" step="0.1" value={c} onChange={e=>setC(Number(e.target.value))}/></label><div className="lab-note"><b>₹1,00,000 virtual capital</b><p>Compare 1% with 10%. Outcome order matters even when expectancy is positive.</p></div></section><section className="lab-output"><div className="metric-strip"><span>ENDING BALANCE<b>₹{Math.max(0,Math.round(100000*(1+(b/100*c-(1-b/100))*a/8))).toLocaleString("en-IN")}</b></span><span>MAX DRAWDOWN<b className={a>4?"danger":""}>{Math.round(a*3.4)}%</b></span><span>LOSING STREAK<b>{Math.max(2,Math.round((100-b)/9))}</b></span></div><div className="equity-chart">{equity.map((v,i)=><i key={i} style={{height:`${Math.min(94,v)}%`}} className={i && v<equity[i-1]?"down":""}/>)}</div><div className={`ruin-warning ${a>4?"show":""}`}><b>{a>4?"Capital survival is now fragile":"Risk is controlled—not eliminated"}</b><p>{a>4?"A normal losing streak can create a drawdown that requires a disproportionate recovery.":"Small fixed risk gives the strategy more attempts to express its edge."}</p></div></section></div>}
+    {isOption && <div className="lab-workbench"><section className="lab-controls"><h2>Market inputs</h2><label>NIFTY spot <b>{a.toLocaleString("en-IN")}</b><input type="range" min="21500" max="23500" step="50" value={a} onChange={e=>setA(Number(e.target.value))}/></label><label>Strike <b>{b.toLocaleString("en-IN")}</b><input type="range" min="21500" max="23500" step="50" value={b} onChange={e=>setB(Number(e.target.value))}/></label><label>Days / IV input <b>{c}</b><input type="range" min="1" max="45" value={c} onChange={e=>setC(Number(e.target.value))}/></label><div className="moneyness"><span className={a>b?"active":""}>ITM</span><span className={Math.abs(a-b)<=100?"active":""}>ATM</span><span className={a<b?"active":""}>OTM</span></div></section><section className="lab-output"><div className="metric-strip"><span>PREMIUM<b>₹{premium}</b></span><span>DELTA<b>{delta.toFixed(2)}</b></span><span>THETA / DAY<b className="danger">−₹{Math.max(3,Math.round(premium/(c*2)))}</b></span><span>VEGA<b>{(premium*.032).toFixed(1)}</b></span></div><div className="payoff-chart"><div className="zero-line"/><div className="payoff-line" style={{transform:`rotate(${Math.max(-18,Math.min(18,(a-b)/60))}deg)`}}/><span>LOSS</span><span>PROFIT</span></div><div className="lab-note"><b>Greeks are dynamic sensitivities.</b><p>They describe how the modelled premium responds around the current inputs. They do not guarantee the next premium.</p></div></section></div>}
+    {isOI && <div className="oi-game"><div className="oi-round-head"><span>ROUND {round+1} / 8</span><b>SCORE {score}</b></div><div className="oi-signals"><div><span>PRICE</span><b>{oiRounds[round%4].p}</b><small>{oiRounds[round%4].p === "↑" ? "+1.2%":"−1.2%"}</small></div><div><span>OPEN INTEREST</span><b>{oiRounds[round%4].o}</b><small>{oiRounds[round%4].o === "↑" ? "+8.4%":"−8.4%"}</small></div></div><h2>Classify the observed combination</h2><div className="oi-choices">{["Long buildup","Short buildup","Short covering","Long unwinding"].map(item=><button key={item} className={choice===item?"selected":""} onClick={()=>answerOI(item)}>{item}</button>)}</div>{choice && <div className={`oi-feedback ${choice===oiRounds[round%4].answer?"correct":"incorrect"}`}><b>{choice===oiRounds[round%4].answer?"Correct classification":"Review the two directions together"}</b><p>{oiRounds[round%4].answer}. This is an analytical classification framework—not a guaranteed prediction of future direction.</p><button className="button-primary" onClick={()=>{setRound(round+1);setChoice(null)}}>Next round <span>→</span></button></div>}</div>}
+    {isCandle && <div className="lab-workbench"><section className="lab-controls"><h2>Build the candle</h2><label>Open <b>{a}</b><input type="range" min="80" max="120" value={a} onChange={e=>setA(Number(e.target.value))}/></label><label>Close <b>{b}</b><input type="range" min="80" max="120" value={b} onChange={e=>setB(Number(e.target.value))}/></label><label>Range <b>{c}</b><input type="range" min="20" max="80" value={c} onChange={e=>setC(Number(e.target.value))}/></label></section><section className="candle-output"><div className={`large-candle ${b>=a?"bull":"bear"}`}><i style={{height:`${c+80}px`}}/><b style={{height:`${Math.max(12,Math.abs(b-a)*4)}px`, transform:`translateY(${(100-(a+b)/2)*2}px)`}}/></div><div><span>{b>=a?"BULLISH":"BEARISH"} CANDLE</span><h2>Open {a} → Close {b}</h2><p>The body shows the open-to-close change. Wicks show traded extremes—not the path price took inside the interval.</p></div></section></div>}
+    {isOrder && <div className="order-lab"><div className="order-book"><div className="book-head"><span>QTY</span><span>ASK</span></div>{[[300,22504],[250,22503],[200,22502]].map(row=><div className="ask" key={row[1]}><span>{row[0]}</span><b>₹{row[1]}</b></div>)}<div className="spread">SPREAD ₹1.00</div>{[[180,22501],[400,22500],[350,22499]].map(row=><div className="bid" key={row[1]}><span>{row[0]}</span><b>₹{row[1]}</b></div>)}</div><div className="order-task"><span>EXECUTION CHALLENGE</span><h2>You urgently need to buy 500 NIFTY units.</h2><p>A market order prioritises execution, not price. A limit order prioritises price, not certainty of fill.</p><div><button onClick={()=>setChoice("market")}>Market order</button><button onClick={()=>setChoice("limit")}>Limit at ₹22,501</button></div>{choice && <div className="fill-result"><b>{choice==="market"?"Filled: 200 @ ₹22,502 + 250 @ ₹22,503 + 50 @ ₹22,504":"Only 180 units available at your price"}</b><p>{choice==="market"?"Average fill ₹22,502.70. Urgency created ₹1.70 of slippage versus the best bid.":"Price was controlled, but 320 units remain unfilled. Execution is a trade-off."}</p></div>}</div></div>}
+    {isBacktest && <div className="lab-workbench"><section className="lab-controls"><h2>Research controls</h2><label>RSI threshold <b>{a}</b><input type="range" min="10" max="40" value={a} onChange={e=>setA(Number(e.target.value))}/></label><label>Exit threshold <b>{b}</b><input type="range" min="45" max="75" value={b} onChange={e=>setB(Number(e.target.value))}/></label><label>Stop distance <b>{c}%</b><input type="range" min="10" max="60" value={c} onChange={e=>setC(Number(e.target.value))}/></label><button className="button-primary" onClick={()=>setTested(!tested)}>{tested?"Return to Dataset A":"TEST ON UNSEEN DATA"}<span>→</span></button></section><section className="lab-output"><div className="dataset-label"><span>{tested?"DATASET B · OUT OF SAMPLE":"DATASET A · IN SAMPLE"}</span><b>{tested?"Reality check":"Optimisation result"}</b></div><div className="metric-strip"><span>TOTAL RETURN<b className={tested?"danger":""}>{tested?"−4.8%":"+34.2%"}</b></span><span>WIN RATE<b>{tested?"43%":"72%"}</b></span><span>MAX DRAWDOWN<b>{tested?"18.4%":"6.1%"}</b></span><span>TRADES<b>{tested?"38":"41"}</b></span></div><MiniMarket tone={tested?"down":"up"}/><div className={`ruin-warning ${tested?"show":""}`}><b>{tested?"The attractive pattern did not generalise":"This result is not evidence yet"}</b><p>{tested?"Parameter selection fitted noise in Dataset A. Robustness requires unseen data, costs, adequate samples and stable neighbouring parameters.":"Now test the exact same rules on data that did not influence parameter selection."}</p></div></section></div>}
+    {!isRisk&&!isOption&&!isOI&&!isBacktest&&!isCandle&&!isOrder && <div className="generic-lab"><MiniMarket tone={choice==="Range"?"range":"up"}/><div><span>CLASSIFY THE MARKET SAMPLE</span><h2>What regime best describes this NIFTY segment?</h2><div>{["Trend","Range","High volatility","Transition"].map(item=><button key={item} className={choice===item?"selected":""} onClick={()=>setChoice(item)}>{item}</button>)}</div>{choice&&<p><b>Your read: {choice}.</b> Now inspect swing direction, overlap and range expansion. Classification is a working hypothesis, not a permanent label.</p>}</div></div>}
+    <p className="disclaimer">Educational simulation · Synthetic Indian-market scenarios · No investment advice</p>
+  </div>;
+}
+
+function ReviewPage({ state, openLesson }: { state: PersistedState; openLesson: (lesson: Lesson) => void }) {
+  const weak = Object.entries(state.mastery).sort((a,b)=>a[1]-b[1]).slice(0,8);
+  return <div className="page-shell"><div className="page-title"><div><span className="kicker">ADAPTIVE PRACTICE</span><h1>Review what is <em>fragile.</em></h1><p>Short targeted exercises—never a forced replay of an entire module.</p></div></div><div className="review-grid">{weak.map(([topic,value],index)=>{ const lesson = allLessons.find(item=>item.masteryTags.some(tag=>tag.toLowerCase()===topic.toLowerCase())) ?? allLessons[index]; return <article key={topic}><div className="review-status"><span>{masteryLabel(value)}</span><i style={{width:`${value}%`}}/></div><h2>{topic}</h2><p>{index%2?"Interpret the evidence inside market context.":"Rebuild the concept through one focused decision."}</p><div><span>3 min drill</span><span>+5 XP</span></div><button onClick={()=>openLesson(lesson)}>Review now →</button></article>})}</div></div>;
+}
+
+function ProgressPage({ state }: { state: PersistedState }) {
+  const completed = new Set(state.completed); const accuracy = 71; return <div className="page-shell"><div className="page-title"><div><span className="kicker">LEARNING ANALYTICS</span><h1>Progress that reflects <em>practice.</em></h1><p>Completion is useful. Transferable judgement and risk awareness matter more.</p></div></div><div className="metric-cards"><article><span>COURSE COMPLETION</span><b>{Math.round(completed.size/allLessons.length*100)}%</b><small>{completed.size} of {allLessons.length} lessons</small></article><article><span>TOTAL XP</span><b>{state.xp}</b><small>7 day learning streak</small></article><article><span>QUESTIONS ANSWERED</span><b>42</b><small>{accuracy}% reasoning accuracy</small></article><article><span>MODULES COMPLETED</span><b>0</b><small>3 currently in progress</small></article></div><div className="progress-layout"><section className="panel"><div className="panel-head"><div><span className="kicker">LEVEL COMPLETION</span><h2>Course journey</h2></div></div>{course.map(level=><div className="progress-level" key={level.code}><span>LEVEL {level.number}</span><b>{level.title}</b><div><i style={{width:`${levelProgress(level,completed)}%`}}/></div><strong>{levelProgress(level,completed)}%</strong></div>)}</section><section className="panel activity-panel"><div className="panel-head"><div><span className="kicker">LAST 12 WEEKS</span><h2>Practice consistency</h2></div></div><div className="activity-chart">{[22,38,31,54,48,66,59,75,51,82,69,88].map((value,index)=><div key={index}><i style={{height:`${value}%`}}/><span>W{index+1}</span></div>)}</div></section></div><section className="panel mastery-full"><div className="panel-head"><div><span className="kicker">CONCEPT CONFIDENCE</span><h2>Topic mastery</h2></div><span className="precision-note">BANDS, NOT FALSE PRECISION</span></div><div className="mastery-grid">{Object.entries(state.mastery).map(([topic,value])=><div key={topic}><div><b>{topic}</b><span>{masteryLabel(value)}</span></div><div><i style={{width:`${value}%`}}/></div></div>)}</div></section><section className="panel badges-section"><div className="panel-head"><div><span className="kicker">MILESTONES</span><h2>Badges</h2></div></div><div className="badge-grid">{badges.map((badge,index)=><div className={index<3?"earned":""} key={badge}><i>{["M","C","R","S","F","O","Δ","Γ","OI","V","ƒ","BT","!","SYS"][index]}</i><b>{badge}</b><small>{index<3?"EARNED":"LOCKED"}</small></div>)}</div></section></div>;
+}
+
+function ContentReview({ openLesson }: { openLesson: (lesson: Lesson) => void }) {
+  const [filter,setFilter] = useState("All"); const [query,setQuery] = useState(""); const [level,setLevel] = useState("All");
+  const filtered = allLessons.filter(lesson => (filter==="All"||lesson.status===filter)&&(level==="All"||lesson.levelCode===level)&&(`${lesson.id} ${lesson.title} ${lesson.module}`.toLowerCase().includes(query.toLowerCase())));
+  return <div className="page-shell review-admin"><div className="page-title"><div><span className="kicker">INTERNAL CREATOR WORKSPACE</span><h1>Content <em>Review</em></h1><p>Browse the complete structured curriculum. Every lesson is a stable record ready for lesson-by-lesson refinement.</p></div><div className="content-count"><b>{allLessons.length}</b><span>VERSION 1 LESSONS</span></div></div><div className="model-strip"><span>STRUCTURED LESSON MODEL</span>{supportedBlockTypes.slice(0,10).map(type=><b key={type}>{type}</b>)}<em>+{supportedBlockTypes.length-10} block types</em></div><div className="review-toolbar"><label>Search lessons<input value={query} onChange={e=>setQuery(e.target.value)} placeholder="ID, title or module…"/></label><label>Level<select value={level} onChange={e=>setLevel(e.target.value)}><option>All</option><option>FND</option><option>APP</option><option>PRO</option></select></label><div className="status-filter">{["All","Draft","Review","Approved"].map(item=><button key={item} className={filter===item?"active":""} onClick={()=>setFilter(item)}>{item}</button>)}</div></div><div className="review-table"><div className="review-table-head"><span>LESSON ID</span><span>LESSON</span><span>OBJECTIVE & INTERACTION</span><span>MASTERY</span><span>STATUS</span><span/></div>{filtered.map(lesson=><button className="review-table-row" key={lesson.id} onClick={()=>openLesson(lesson)}><b>{lesson.id}</b><span><small>{lesson.level} · {lesson.module}</small><strong>{lesson.title}</strong></span><span><small>{lesson.learningObjectives[0]}</small><em>{lesson.blocks.map(block=>block.type).slice(0,3).join(" · ")}</em></span><span className="tag-cell">{lesson.masteryTags.map(tag=><i key={tag}>{tag}</i>)}</span><span className="draft-status">{lesson.status}</span><span>→</span></button>)}</div><div className="table-footer">Showing {filtered.length} of {allLessons.length} lessons · All initial content is Version 1 / Draft</div></div>;
 }
 
 export default function Home() {
-  const [prediction, setPrediction] = useState<Prediction>(null);
-  const [confidence, setConfidence] = useState(60);
-  const [risk, setRisk] = useState(1);
-  const [locked, setLocked] = useState(false);
-  const [revealed, setRevealed] = useState(22);
-  const [xp, setXp] = useState(1240);
-  const [completed, setCompleted] = useState(false);
-  const [navOpen, setNavOpen] = useState(false);
-
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem("candlecraft-progress");
-      if (saved) {
-        const data = JSON.parse(saved) as { xp?: number; completed?: boolean };
-        if (data.xp) setXp(data.xp);
-        if (data.completed) setCompleted(true);
-      }
-    } catch { /* local progress is optional */ }
-  }, []);
-
-  const entry = 184.6;
-  const stop = 182.75;
-  const riskAmount = 10000 * (risk / 100);
-  const shares = Math.floor(riskAmount / (entry - stop));
-  const currentPrice = candles[Math.max(21, revealed - 1)].close;
-  const pnl = locked ? (currentPrice - entry) * shares : 0;
-  const score = prediction === "long" ? 100 : prediction === "wait" ? 45 : 15;
-
-  const learningNote = useMemo(() => {
-    if (!locked) return null;
-    if (prediction === "long") return { title: "Sharp read — the volume confirmed it.", text: "Price compressed below resistance while lows kept rising. The breakout candle closed above $185 with nearly 2× average volume: a higher-quality signal than a wick alone." };
-    if (prediction === "wait") return { title: "Safe, but a little too cautious.", text: "Waiting protected capital, but the rising lows and expanding volume were useful evidence. A small, defined-risk position would have been justified after the close above $185." };
-    return { title: "Good thesis, wrong evidence.", text: "Repeated resistance can reject price, but rising lows showed buyers accepting higher prices. Before shorting, wait for a lower high or a close back below support." };
-  }, [locked, prediction]);
-
-  function lockPrediction() {
-    if (!prediction || locked) return;
-    setLocked(true);
-    setRevealed(24);
-    const earned = prediction === "long" ? 40 : prediction === "wait" ? 20 : 10;
-    setXp((value) => value + earned);
-  }
-
-  function revealNext() {
-    if (revealed < candles.length) {
-      setRevealed((value) => Math.min(value + 2, candles.length));
-      return;
-    }
-    if (!completed) {
-      const nextXp = xp + 60;
-      setXp(nextXp);
-      setCompleted(true);
-      localStorage.setItem("candlecraft-progress", JSON.stringify({ xp: nextXp, completed: true }));
-    }
-  }
-
-  function restart() {
-    setPrediction(null);
-    setLocked(false);
-    setRevealed(22);
-    setCompleted(false);
-  }
-
-  return (
-    <main className="app-frame">
-      <aside className={`side-nav ${navOpen ? "open" : ""}`}>
-        <div className="brand"><span className="brand-mark">C</span><div>Candle<span>craft</span></div></div>
-        <button className="close-nav" onClick={() => setNavOpen(false)} aria-label="Close navigation">×</button>
-        <nav aria-label="Primary navigation">
-          <a className="nav-link active" href="#lesson"><span>⌂</span> Learn</a>
-          <a className="nav-link" href="#practice"><span>⌁</span> Practice</a>
-          <a className="nav-link" href="#journal"><span>▤</span> Journal</a>
-          <a className="nav-link" href="#leaderboard"><span>♜</span> League</a>
-        </nav>
-        <div className="nav-section-label">YOUR PATH</div>
-        <div className="module-list">
-          {modules.map((module) => (
-            <button className={`module-item ${module.active ? "active" : ""}`} key={module.title}>
-              <span className="module-icon">{module.icon}</span><span><b>{module.title}</b><small>{module.lessons} lessons</small></span>
-            </button>
-          ))}
-        </div>
-        <div className="daily-card">
-          <div className="daily-head"><span>DAILY GOAL</span><strong>3 / 5</strong></div>
-          <div className="progress-track"><i style={{ width: "60%" }}/></div>
-          <small>2 exercises to keep your streak</small>
-        </div>
-        <div className="profile-row"><span className="avatar">VK</span><div><b>Market Rookie</b><small>Level 6</small></div><button aria-label="Profile settings">•••</button></div>
-      </aside>
-
-      <section className="workspace" id="lesson">
-        <header className="topbar">
-          <button className="menu-button" onClick={() => setNavOpen(true)} aria-label="Open navigation">☰</button>
-          <div className="lesson-breadcrumb"><span>PRICE ACTION</span><b>Lesson 5 of 7</b></div>
-          <div className="stats-row"><span className="stat fire">◆ <b>12</b><small>day streak</small></span><span className="stat xp">✦ <b>{xp.toLocaleString()}</b><small>total XP</small></span><button className="sound-button" aria-label="Toggle sound">◖))</button></div>
-        </header>
-
-        <div className="lesson-progress" aria-label="Lesson progress">
-          {lessonSteps.map((step, index) => <div className={`${index === 1 && !locked ? "current" : ""} ${index < 1 || locked ? "done" : ""}`} key={step}><i>{index < 1 || locked ? "✓" : index + 1}</i><span>{step}</span></div>)}
-        </div>
-
-        <div className="content-grid">
-          <section className="lesson-column">
-            <div className="eyebrow"><span>INTERACTIVE LESSON</span><b>+100 XP</b></div>
-            <h1>Can you spot the <em>pressure?</em></h1>
-            <p className="lesson-intro">NOVA has tested the same ceiling four times. But look closer: buyers are changing the shape of every pullback.</p>
-
-            <div className="coach-prompt">
-              <span className="coach-face">CC</span>
-              <div><b>Coach says</b><p>Don’t predict yet. Trace the swing lows from left to right. What are buyers quietly doing?</p></div>
-              <button aria-label="Replay coach tip">↻</button>
-            </div>
-
-            <MarketChart revealed={revealed} prediction={locked ? prediction : null}/>
-
-            {!locked ? (
-              <div className="decision-panel">
-                <div className="decision-copy"><span>YOUR READ</span><h2>What happens after the next candle?</h2></div>
-                <div className="choice-grid">
-                  <button className={prediction === "long" ? "selected long" : ""} onClick={() => setPrediction("long")}><i>↗</i><span><b>Breakout</b><small>Buyers push above $185</small></span><kbd>1</kbd></button>
-                  <button className={prediction === "short" ? "selected short" : ""} onClick={() => setPrediction("short")}><i>↘</i><span><b>Rejection</b><small>Sellers defend the level</small></span><kbd>2</kbd></button>
-                  <button className={prediction === "wait" ? "selected wait" : ""} onClick={() => setPrediction("wait")}><i>•</i><span><b>Not enough data</b><small>Wait for confirmation</small></span><kbd>3</kbd></button>
-                </div>
-                <div className="confidence-row"><label htmlFor="confidence">Confidence <b>{confidence}%</b></label><input id="confidence" type="range" min="20" max="100" value={confidence} onChange={(event) => setConfidence(Number(event.target.value))}/><span>Unsure</span><span>Conviction</span></div>
-                <button className="primary-action" disabled={!prediction} onClick={lockPrediction}>Lock in my prediction <span>→</span></button>
-              </div>
-            ) : (
-              <div className={`feedback-panel score-${score}`}>
-                <div className="feedback-score"><span>{score}</span><small>READ SCORE</small></div>
-                <div><span className="feedback-label">MARKET FEEDBACK</span><h2>{learningNote?.title}</h2><p>{learningNote?.text}</p><div className="feedback-tags"><span>Rising lows ✓</span><span>Volume expansion ✓</span><span>Close above level ✓</span></div></div>
-              </div>
-            )}
-          </section>
-
-          <aside className="sim-column" id="practice">
-            <div className="sim-header"><div><span>PAPER TRADING LAB</span><h2>Plan the trade</h2></div><span className="live-dot">SIMULATED</span></div>
-            <div className="account-strip"><span>Account equity<b>$10,000.00</b></span><span>Buying power<b>$20,000.00</b></span></div>
-
-            <div className="ticket-section">
-              <div className="order-toggle"><button className="active">LONG</button><button>SHORT</button></div>
-              <label className="field-label">Entry trigger <span>Break & close above</span></label>
-              <div className="price-field"><span>$</span><strong>{entry.toFixed(2)}</strong><small>LIMIT</small></div>
-              <label className="field-label" htmlFor="risk-slider">Risk per trade <b>{risk.toFixed(1)}%</b></label>
-              <input id="risk-slider" className="risk-slider" type="range" min="0.5" max="2.5" step="0.5" value={risk} onChange={(event) => setRisk(Number(event.target.value))}/>
-              <div className="risk-labels"><span>Conservative</span><span>Aggressive</span></div>
-              <div className="ticket-grid"><span>Stop loss<b>${stop.toFixed(2)}</b></span><span>Risk amount<b>${riskAmount.toFixed(0)}</b></span><span>Position size<b>{shares} shares</b></span><span>Target · 2R<b>${(entry + 2 * (entry - stop)).toFixed(2)}</b></span></div>
-              <div className="rr-meter"><span>RISK <b>${riskAmount.toFixed(0)}</b></span><div><i/><i/><i/></div><span>REWARD <b>${(riskAmount * 2).toFixed(0)}</b></span></div>
-            </div>
-
-            <div className={`position-card ${locked ? "active" : ""}`}>
-              <div className="position-head"><span>{locked ? "OPEN POSITION" : "TRADE PREVIEW"}</span><b className={pnl >= 0 ? "profit" : "loss"}>{locked ? `${pnl >= 0 ? "+" : "-"}$${Math.abs(pnl).toFixed(2)}` : "$0.00"}</b></div>
-              <div className="position-price"><small>MARKET PRICE</small><strong>${currentPrice.toFixed(2)}</strong><span className={currentPrice >= entry ? "profit" : "loss"}>{currentPrice >= entry ? "▲" : "▼"} {Math.abs(((currentPrice-entry)/entry)*100).toFixed(2)}%</span></div>
-              <div className="mini-track"><i className="stop-marker"/><i className="entry-marker"/><i className="target-marker"/><span>STOP</span><span>ENTRY</span><span>TARGET</span></div>
-            </div>
-
-            {locked ? <button className="sim-action" onClick={revealNext}>{revealed < candles.length ? "Reveal next candles" : completed ? "Lesson complete ✓" : "Bank lesson XP"}<span>▶</span></button> : <div className="locked-note"><span>⌁</span><p><b>Make your market call first.</b>Your trade plan will activate after you lock in a prediction.</p></div>}
-
-            {completed && <div className="completion-card"><span>✦</span><div><b>Lesson mastered!</b><small>+100 XP · Accuracy logged</small></div><button onClick={restart}>Practice again</button></div>}
-            <p className="disclaimer">Practice environment · No real money · Educational use only</p>
-          </aside>
-        </div>
-      </section>
-    </main>
-  );
+  const [page,setPage] = useState<Page>("home"); const [state,setState] = useState<PersistedState>(defaultState); const [lesson,setLesson] = useState<Lesson>(allLessons[3]); const [lab,setLab] = useState("Risk Simulator"); const [navOpen,setNavOpen] = useState(false); const [loaded,setLoaded] = useState(false);
+  useEffect(()=>{ try { const saved=localStorage.getItem("trading-academy-v1"); if(saved) setState({...defaultState,...JSON.parse(saved),onboarding:true}); } catch{} setLoaded(true); },[]);
+  useEffect(()=>{ if(loaded) localStorage.setItem("trading-academy-v1",JSON.stringify(state)); },[state,loaded]);
+  function openLesson(item:Lesson){ setLesson(item); setPage("lesson"); setState(current=>({...current,currentLessonId:item.id})); window.scrollTo({top:0,behavior:"smooth"}); }
+  function openLab(name:string){ setLab(name); setPage("lab"); window.scrollTo({top:0,behavior:"smooth"}); }
+  function finishOnboarding(familiarity:string){ const suggested = familiarity === "Experienced trader" ? "APP-PA-001" : familiarity === "Trade occasionally" ? "FND-RISK-001" : familiarity === "Know the basics" ? "FND-CHART-001" : "FND-MKT-001"; setState(current=>({...current,onboarding:true,familiarity,currentLessonId:suggested})); }
+  return <main className="academy-app"><Sidebar page={page} setPage={setPage} state={state} setState={setState} open={navOpen} setOpen={setNavOpen}/><section className="main-workspace"><Header page={page} state={state} setOpen={setNavOpen}/>{page==="home"&&<Dashboard state={state} openLesson={openLesson} setPage={setPage} openLab={openLab}/>} {page==="learn"&&<LearnPage state={state} openLesson={openLesson} openLab={openLab}/>} {page==="lesson"&&<LessonPage lesson={lesson} state={state} setState={setState} openLesson={openLesson} back={()=>setPage("learn")}/>} {page==="labs"&&<LabsPage openLab={openLab}/>} {page==="lab"&&<LabView name={lab} back={()=>setPage("labs")}/>} {page==="review"&&<ReviewPage state={state} openLesson={openLesson}/>} {page==="progress"&&<ProgressPage state={state}/>} {page==="content"&&<ContentReview openLesson={openLesson}/>}</section>{loaded&&!state.onboarding&&<Onboarding complete={finishOnboarding}/>}</main>;
 }

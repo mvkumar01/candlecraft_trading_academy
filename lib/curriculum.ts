@@ -76,12 +76,23 @@ const masteryFor = (title: string, moduleTitle: string) => {
   return tags.length ? [...new Set(tags)].slice(0, 3) : [moduleTitle.toLowerCase()];
 };
 
+const lessonContent: Record<string, { description: string; conceptTitle: string; conceptBody: string; takeaway: string; assessment: string }> = {
+  "FND-MKT-001": {
+    description: "Before charts, orders or strategies, understand the system that connects people who need capital with people willing to provide it.",
+    conceptTitle: "A financial market is a system for exchanging financial assets.",
+    conceptBody: "It brings buyers and sellers together under shared rules so they can trade assets such as shares, bonds, currencies and derivatives. The market may once have been a physical floor, but modern markets such as NSE and BSE are largely electronic networks.",
+    takeaway: "A financial market is the organised system—not a single building—where financial assets are issued, bought and sold under shared rules.",
+    assessment: "Which description best captures what a financial market is?",
+  },
+};
+
 function makeLesson(seed: ModuleSeed, title: string, order: number, levelCode: "FND" | "APP" | "PRO", levelTitle: string): Lesson {
   const id = `${levelCode}-${seed.code}-${String(order + 1).padStart(3, "0")}`;
   const tags = masteryFor(title, seed.title);
+  const content = lessonContent[id];
   return {
     id, title,
-    description: `Build a practical, context-aware understanding of ${title.toLowerCase()} using an Indian-market scenario.`,
+    description: content?.description ?? `Build a practical, context-aware understanding of ${title.toLowerCase()} using an Indian-market scenario.`,
     level: levelTitle, levelCode, module: seed.title, moduleCode: seed.code, order: order + 1,
     estimatedMinutes: 4 + (order % 3),
     learningObjectives: [`Explain ${title.toLowerCase()} in plain language`, `Apply the idea to a NIFTY market scenario`, "Separate evidence from prediction"],
@@ -89,12 +100,12 @@ function makeLesson(seed: ModuleSeed, title: string, order: number, levelCode: "
     masteryTags: tags, status: "Draft", xp: 10,
     blocks: [
       { type: "concept", title: "Start with the decision", body: `What would change in your next decision if you understood ${title.toLowerCase()} correctly?` },
-      { type: "visual", title: "See it in market context", body: `Use the NIFTY scenario to connect ${title.toLowerCase()} with price, liquidity and risk.` },
+      { type: "visual", title: content?.conceptTitle ?? "See it in market context", body: content?.conceptBody ?? `Use the NIFTY scenario to connect ${title.toLowerCase()} with price, liquidity and risk.` },
       { type: "prediction", prompt: "Choose the interpretation that respects uncertainty and market context." },
       { type: "challenge", prompt: `Apply ${title.toLowerCase()} without turning it into a deterministic trading rule.` },
-      { type: "summary", title: "Carry forward", body: `Treat ${title.toLowerCase()} as evidence inside a process—not a guarantee.` },
+      { type: "summary", title: "Carry forward", body: content?.takeaway ?? `Treat ${title.toLowerCase()} as evidence inside a process—not a guarantee.` },
     ],
-    assessment: { prompt: `Which action best applies ${title.toLowerCase()} while controlling risk?`, applicationFirst: true },
+    assessment: { prompt: content?.assessment ?? `Which action best applies ${title.toLowerCase()} while controlling risk?`, applicationFirst: true },
   };
 }
 

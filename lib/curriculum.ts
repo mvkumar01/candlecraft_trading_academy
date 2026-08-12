@@ -4,6 +4,20 @@ export type LessonStatus = "Draft" | "Review" | "Approved";
 export type BlockType = "concept" | "text" | "callout" | "visual" | "quiz" | "true_false" | "scenario" | "slider" | "chart" | "chart_question" | "calculation" | "option_chain" | "simulation" | "matching" | "sequence" | "prediction" | "reveal" | "summary" | "challenge";
 
 export type LessonBlock = { type: BlockType; title?: string; body?: string; prompt?: string };
+export type InteractionKind = "index" | "order_book" | "candle" | "rsi" | "contracts" | "delta" | "expectancy" | "overfitting" | "payoff" | "pnl" | "risk" | "classification" | "scenario";
+export type LessonMaterial = {
+  hook: string;
+  explanation: string;
+  exampleTitle: string;
+  example: string;
+  interaction: InteractionKind;
+  question: string;
+  choices: string[];
+  correct: number;
+  correctFeedback: string;
+  incorrectFeedback: string;
+  takeaway: string;
+};
 export type Lesson = {
   id: string;
   title: string;
@@ -21,6 +35,7 @@ export type Lesson = {
   blocks: LessonBlock[];
   assessment: { prompt: string; applicationFirst: true };
   xp: number;
+  material: LessonMaterial;
 };
 
 export type CourseModule = { code: string; title: string; description: string; lab?: string; lessons: Lesson[] };
@@ -188,17 +203,24 @@ const exactConcept: Record<string, string> = {
   "Sharpe ratio": "The Sharpe ratio compares average excess return with return variability; its usefulness depends on assumptions and the return distribution.",
   "Why traders lose money": "Traders can lose through negative expectancy, excessive size, uncontrolled costs, poor execution or abandoning a valid process. A loss alone does not prove the decision was poor; repeated unmanaged loss does.",
   "Reading price in context": "Context asks where current price sits within broader structure, volatility and liquidity. The same candle can mean different things near a range edge, inside a trend or during a transition.",
+  "Break of structure": "A break of structure occurs when price moves through a previously relevant swing point. It is evidence that the prior swing sequence changed, but acceptance and context determine whether the break persists.",
   "Why timeframe matters": "A timeframe changes how transactions are grouped and which swings appear important. Higher timeframes show broader structure; lower timeframes expose execution detail and noise.",
   "What is momentum?": "Momentum is the persistence and strength of recent directional price movement. It can continue or fail, so a momentum trade needs a defined invalidation point.",
   "What is mean reversion?": "Mean reversion is the tendency of a measured variable to move back toward a reference level after an extreme, under conditions where that relationship has historically held.",
+  "Long futures": "A long futures position gains when the settlement price rises and loses when it falls, multiplied by the contract quantity. Margin supports the position but does not cap its loss.",
+  "Option payoff": "An option payoff is the contract's value at expiry as a function of the underlying price. Profit also subtracts premium and costs, so payoff and profit are not interchangeable.",
   "OI distributions": "An OI distribution shows how outstanding contracts are spread across strikes. Concentration and migration can reveal positioning changes, but not participant intent with certainty.",
   "Understanding participant positioning": "Participant positioning describes the directional, volatility and time exposures that market participants may hold. Public data supports inference, not perfect identification of who owns each position.",
   "Realised volatility": "Realised volatility estimates how variable the underlying's observed returns were over a historical window. It changes with the lookback and sampling method.",
+  "IV expansion": "IV expansion means the implied volatility embedded in option prices has risen. Holding other inputs equal, higher IV generally increases both call and put premiums, but it does not predict spot direction.",
   "Why combine options?": "Multiple option legs can cap risk, reduce premium, isolate a volatility view or reshape the payoff. Each benefit is purchased by giving up something elsewhere in the payoff.",
+  "Iron Condor": "An Iron Condor combines a defined-risk call spread and put spread, usually to seek limited profit when the underlying expires inside a chosen range. Maximum profit and loss are both capped by the strikes and net premium.",
   "Portfolio Delta": "Portfolio Delta adds the signed Delta exposure of each position after quantity and contract multiplier. It approximates small-move directional sensitivity, not the portfolio's worst-case loss.",
   "Discretionary vs systematic": "Discretionary trading allows judgement within the decision process; systematic trading encodes decisions as explicit repeatable rules. Both still require hypotheses, risk limits and review.",
   "Total return": "Total return measures the cumulative gain or loss over a period, including the chosen treatment of cash flows. It does not reveal the path, drawdown or risk required to earn it.",
+  "Expectancy": "Expectancy estimates average outcome per trade: win probability times average win minus loss probability times average loss, after trading costs. It needs a representative sample and does not guarantee the next trade.",
   "Risk per strategy": "Risk per strategy limits the capital or loss budget assigned to one return process. It must account for correlated positions and changing volatility, not merely add trade-level stops.",
+  "Volatility-adjusted sizing": "Volatility-adjusted sizing reduces quantity when expected movement expands and increases it when movement contracts, so the planned capital risk stays more comparable across changing conditions.",
 };
 
 function conceptFor(title: string, moduleTitle: string) {
@@ -212,10 +234,91 @@ function conceptFor(title: string, moduleTitle: string) {
   return `${title} focuses on one practical part of ${moduleTitle.toLowerCase()}. ${primer} The useful question is how it changes evidence, action or risk—not whether it guarantees an outcome.`;
 }
 
+const interactionFor = (title: string, module: string): InteractionKind => {
+  const text = `${title} ${module}`.toLowerCase();
+  if (/nifty 50|sensex|index vs|what is an index/.test(text)) return "index";
+  if (/bid|ask|spread|depth|liquidity|slippage|order|partial fill|execution/.test(text)) return "order_book";
+  if (/ohlc|candle|wick/.test(text)) return "candle";
+  if (/rsi|momentum indicator|overbought|oversold/.test(text)) return "rsi";
+  if (/open interest|oi |buildup|covering|unwinding|option chain|call oi|put oi|pcr|positioning/.test(text)) return "contracts";
+  if (/delta|gamma|theta|vega|greek|hedg/.test(text)) return "delta";
+  if (/expectancy|win rate|average win|average loss|payoff ratio|profit factor|strategy comparison/.test(text)) return "expectancy";
+  if (/backtest|overfit|curve fit|in-sample|out-of-sample|walk-forward|optimis|robustness|look-ahead|survivorship/.test(text)) return "overfitting";
+  if (/option|call|put|strike|premium|moneyness|intrinsic|time value|spread|straddle|strangle|condor|butterfly/.test(text)) return "payoff";
+  if (/future|long position|short position|profit and loss|mark-to-market|basis/.test(text)) return "pnl";
+  if (/risk|position siz|stop|drawdown|leverage|capital|loss limit|exposure|correlation|concentration/.test(text)) return "risk";
+  if (/trend|range|structure|highs|lows|support|resistance|breakout|regime|volatility|volume|compression|expansion|rejection/.test(text)) return "classification";
+  return "scenario";
+};
+
+const moduleMisconception: Record<string, [string, string]> = {
+  "Financial Markets": ["It is a mechanism for exchanging financial claims under shared rules.", "It is not a machine that guarantees fair value or positive returns."],
+  "How Trading Works": ["The trade follows an operational chain from order to settlement.", "Pressing Buy does not guarantee execution at the price visible a moment earlier."],
+  "Orders and Execution": ["Every order trades price certainty against execution certainty.", "An order type cannot remove liquidity risk."],
+  "Reading Charts": ["The display aggregates completed transactions into a chosen timeframe.", "A chart cannot reveal every intrabar path or participant intention."],
+  "Market Structure": ["Structure is inferred from a sequence of swings and acceptance areas.", "One candle does not establish a durable trend or reversal."],
+  "Volume and Volatility": ["Activity and movement magnitude are different variables.", "Neither high volume nor high volatility determines future direction."],
+  "Indicators": ["The output is derived from historical market inputs.", "A threshold is evidence, not an automatic trade command."],
+  "Risk Management": ["Survival depends on limiting loss before outcomes are known.", "Confidence does not justify unlimited size."],
+  "Price Action": ["Context gives a pattern its possible meaning.", "A named pattern is not a self-contained edge."],
+  "Multi-Timeframe Analysis": ["Each timeframe answers a different structural or execution question.", "Adding timeframes can add contradiction rather than information."],
+  "Momentum Trading": ["Momentum describes persistence in recent movement.", "Strong momentum can fail abruptly and still needs invalidation."],
+  "Mean Reversion": ["Reversion is a regime-dependent statistical tendency.", "Distance from a mean does not force an immediate return."],
+  "Derivatives": ["The contract transfers exposure derived from an underlying.", "Leverage changes the size of risk; it does not create free capital."],
+  "Futures": ["Daily P&L follows contract exposure and is supported by margin.", "Margin is collateral, not the maximum possible loss."],
+  "Options Fundamentals": ["Option value combines payoff rights, time and uncertainty.", "Limited buyer loss does not mean every option position has limited risk."],
+  "Option Greeks": ["Greeks are local, changing sensitivities.", "They are not fixed promises about the next premium."],
+  "Open Interest and Option Chain": ["OI records outstanding contracts and must be read with price and premium.", "Large OI at a strike is not automatically support or resistance."],
+  "Building a Trading Strategy": ["A strategy is a testable set of decision and risk rules.", "More conditions do not automatically create more robustness."],
+  "Advanced Open Interest": ["Strike-by-strike changes reveal evolving outstanding exposure.", "Public OI cannot identify every participant or motive."],
+  "Option Positioning": ["Positioning is inferred probabilistically from several observations.", "One OI column cannot prove who bought or wrote each contract."],
+  "Volatility": ["Volatility prices the magnitude of uncertainty, not direction.", "High IV does not require the underlying to fall."],
+  "Option Strategy Engineering": ["Combining legs exchanges one exposure for another.", "A complex payoff is not automatically a superior trade."],
+  "Greeks and Hedging": ["Hedges reduce selected sensitivities at the current state.", "Delta-neutral does not mean risk-free."],
+  "Market Regimes": ["A regime is a useful, changing description of behaviour.", "A market does not carry a permanent regime label."],
+  "Systematic Trading": ["A system connects hypothesis, rules, execution and controls.", "Automation cannot rescue an untested hypothesis."],
+  "Backtesting": ["A fair test simulates only information available at each historical moment.", "An attractive fitted result is not proof of a durable edge."],
+  "Strategy Evaluation": ["Evaluation uses payoff, risk, path and sample evidence together.", "No single metric can rank every strategy safely."],
+  "Professional Risk Management": ["Portfolio risk includes interactions and shared failure modes.", "Separate stop losses do not guarantee diversified exposure."],
+};
+
+function materialFor(id: string, title: string, module: string, levelCode: "FND" | "APP" | "PRO", explanation: string): LessonMaterial {
+  const [valid, myth] = moduleMisconception[module] ?? ["Use the concept as evidence inside a defined process.", "Do not convert uncertain evidence into a guarantee."];
+  const interaction = interactionFor(title, module);
+  const base: LessonMaterial = {
+    hook: `In ${module}, a NIFTY decision looks different when ${title.toLowerCase()} is understood correctly. What changes—and what does not?`,
+    explanation: `${explanation} Here, focus specifically on its role within ${module.toLowerCase()}.`,
+    exampleTitle: `${title.replace("?", "")} in practice`,
+    example: levelCode === "FND" ? `Within ${module}, use a simplified Indian-market example to separate the definition of ${title.toLowerCase()} from a common misconception.` : levelCode === "APP" ? `Within ${module}, apply ${title.toLowerCase()} to a NIFTY setup, then identify the evidence and invalidation.` : `Within ${module}, treat ${title.toLowerCase()} as a hypothesis input, test its limitations, and state the portfolio risk if it fails.`,
+    interaction,
+    question: `Within ${module}, which statement best applies ${title.toLowerCase()}?`,
+    choices: [`For ${title.toLowerCase()}: ${myth}`, `For ${title.toLowerCase()}: ${valid}`, `${title.replace("?", "")} guarantees the next NIFTY move.`, `${title.replace("?", "")} becomes irrelevant whenever price is volatile.`],
+    correct: 1,
+    correctFeedback: `${valid} For ${title.toLowerCase()} in ${module}, that is the concept-specific conclusion; the next outcome remains uncertain.`,
+    incorrectFeedback: `${myth} Revisit what ${title.toLowerCase()} measures and what it cannot establish.`,
+    takeaway: `For ${title.toLowerCase()} in ${module}, use this definition consistently: ${explanation} Then add context and an explicit risk limit.`,
+  };
+  const overrides: Record<string, Partial<LessonMaterial>> = {
+    "FND-MKT-008": { hook: "NIFTY rises 1%. Did fifty companies all rise by 1%?", exampleTitle: "Build a three-company index", example: "Move Company A, B and C. The simplified index changes by their assigned weights—not by a simple vote of rising versus falling stocks.", interaction: "index", question: "If Reliance rises while several other constituents fall, must NIFTY rise?", choices: ["Yes, because Reliance is in NIFTY", "Not necessarily; the result depends on every constituent move and its weight", "Yes, because an index always follows its largest company", "No, indices never rise when most stocks fall"], correct: 1, correctFeedback: "Correct. A heavily weighted rise can help, but the total weighted contribution of all constituents determines the index move.", incorrectFeedback: "NIFTY is a weighted calculation. One constituent cannot determine the result without considering the others." },
+    "FND-WORK-004": { hook: "A quote shows ₹99.90 / ₹100.10. Which side can you sell to immediately?", exampleTitle: "The best bid", example: "Buyers queue ₹99.90 for 120 shares, ₹99.80 for 250 and ₹99.70 for 400. The best bid is the highest current buying price: ₹99.90.", interaction: "order_book", question: "A market SELL for 50 shares will approximately execute where?", choices: ["₹100.10, the best ask", "₹99.90, the best bid", "₹99.80 regardless of quantity", "At yesterday's close"], correct: 1, correctFeedback: "Correct. A market seller consumes the best available bid first.", incorrectFeedback: "A seller crossing the market trades with queued buyers, beginning at the highest bid." },
+    "FND-WORK-005": { hook: "A quote shows ₹99.90 / ₹100.10. Which side can you buy from immediately?", exampleTitle: "The best ask", example: "Sellers offer ₹100.10 for 100 shares, ₹100.20 for 300 and ₹100.30 for 200. The best ask is the lowest current selling price: ₹100.10.", interaction: "order_book", question: "A market BUY for 50 shares will approximately execute where?", choices: ["₹99.90, the best bid", "₹100.10, the best ask", "₹100.30 regardless of quantity", "At the midpoint automatically"], correct: 1, correctFeedback: "Correct. A market buyer consumes the lowest available ask first.", incorrectFeedback: "A buyer crossing the market trades with queued sellers, beginning at the lowest ask." },
+    "FND-WORK-006": { hook: "Best bid ₹99.90; best ask ₹100.10. What is the immediate round-trip gap?", exampleTitle: "Measure the spread", example: "Spread = best ask minus best bid = ₹100.10 − ₹99.90 = ₹0.20. It can widen when liquidity thins or uncertainty rises.", interaction: "order_book", question: "What is the spread in this book?", choices: ["₹200", "₹0.20", "₹99.90", "₹100.10"], correct: 1, correctFeedback: "Correct: ₹0.20. The spread is a cost of demanding immediate execution.", incorrectFeedback: "Subtract the best bid from the best ask: ₹100.10 − ₹99.90." },
+    "FND-CHART-004": { hook: "Can you reconstruct a candle if you know only four prices?", exampleTitle: "Build an OHLC candle", example: "Set Open, High, Low and Close. The body spans open to close; the upper wick reaches the high; the lower wick reaches the low.", interaction: "candle", question: "Open 100, High 108, Low 98, Close 106 creates what?", choices: ["A bearish candle with no wick", "A bullish body with upper and lower wicks", "A line chart", "A guaranteed continuation signal"], correct: 1, correctFeedback: "Correct. Close above open makes the body bullish; the extremes create both wicks.", incorrectFeedback: "Compare close with open for direction, then compare high and low with the body edges for wicks." },
+    "FND-IND-006": { hook: "RSI reads 25. Does that force NIFTY to rebound?", exampleTitle: "Step through a 14-period momentum balance", example: "As recent losses outweigh recent gains, RSI falls toward 0. As gains dominate, it rises toward 100. The common 14-period setting defines the lookback—not a prediction horizon.", interaction: "rsi", question: "RSI is 25. What can we conclude?", choices: ["NIFTY must rise next", "Recent downside momentum has been strong relative to the lookback", "Buy immediately", "The market cannot fall further"], correct: 1, correctFeedback: "Correct. RSI describes recent momentum. A trade still depends on strategy, regime, price context and risk.", incorrectFeedback: "RSI below 30 is not a reversal guarantee. It says recent losses have been strong relative to gains." },
+    "APP-GRK-001": { hook: "NIFTY moves 100 points. Why might a call with Delta 0.50 move about 50—not exactly 50?", exampleTitle: "Use Delta as a local approximation", example: "NIFTY 25,000; call premium ₹180; Delta ≈ 0.50. A move to 25,100 suggests about ₹230 before accounting for Gamma, IV, time and other changes.", interaction: "delta", question: "What does Delta 0.50 imply for a small +100 spot move, all else initially equal?", choices: ["Premium must rise exactly ₹100", "Premium may rise about ₹50 as a local estimate", "Premium cannot change", "The option has a 50% guaranteed profit probability"], correct: 1, correctFeedback: "Correct. 0.50 × 100 ≈ ₹50, but Delta itself changes and other inputs can move.", incorrectFeedback: "Delta is a local sensitivity, not a fixed multiplier or guaranteed probability." },
+    "APP-OI-001": { hook: "Two traders create one new NIFTY option contract. Is volume one, OI one, or both?", exampleTitle: "Open and close contracts", example: "A buys one new contract from B, who sells it new: volume +1 and OI +1. If both later close against each other: volume +1 and OI −1.", interaction: "contracts", question: "A new buyer trades with a new seller. What happens?", choices: ["Only volume rises", "Both volume and open interest rise", "OI falls", "Neither changes"], correct: 1, correctFeedback: "Correct. One contract traded adds volume; because both sides opened, one outstanding contract is created.", incorrectFeedback: "Volume counts the transaction. OI changes according to whether outstanding positions are opened or closed." },
+    "FND-RISK-007": { hook: "Would you choose an 80% win-rate strategy before seeing the size of its losses?", exampleTitle: "Calculate average outcome", example: "Strategy A: 80% × ₹100 − 20% × ₹600 = −₹40 per trade. Strategy B: 45% × ₹500 − 55% × ₹200 = +₹115 per trade.", interaction: "expectancy", question: "Which strategy is economically better on these assumptions?", choices: ["A, because 80% win rate is higher", "B, because its expectancy is +₹115 versus −₹40", "They are equal", "Impossible to calculate with average wins and losses"], correct: 1, correctFeedback: "Correct. Win rate alone concealed Strategy A's damaging payoff asymmetry.", incorrectFeedback: "Calculate probability-weighted wins minus probability-weighted losses. High win rate can still have negative expectancy." },
+    "PRO-BT-014": { hook: "You found the perfect RSI settings on Dataset A. What has actually been proven?", exampleTitle: "Optimise, then test unseen data", example: "Tune RSI period, entry and exit on Dataset A. The attractive fitted result can deteriorate sharply when the unchanged rules meet Dataset B.", interaction: "overfitting", question: "Dataset A is excellent but unseen Dataset B loses. What is the best diagnosis?", choices: ["Dataset B must be wrong", "The rules likely fitted sample-specific noise", "Optimise harder on both datasets until both win", "A high in-sample return proves robustness"], correct: 1, correctFeedback: "Correct. Generalisation—not the best fitted history—is the point of out-of-sample testing.", incorrectFeedback: "Excellent backtest results can be manufactured by fitting noise. Unseen data tests whether the relationship generalises." },
+  };
+  return { ...base, ...(overrides[id] ?? {}) };
+}
+
 function makeLesson(seed: ModuleSeed, title: string, order: number, levelCode: "FND" | "APP" | "PRO", levelTitle: string): Lesson {
   const id = `${levelCode}-${seed.code}-${String(order + 1).padStart(3, "0")}`;
   const tags = masteryFor(title, seed.title);
   const content = lessonContent[id];
+  const explanation = content?.conceptBody ?? conceptFor(title, seed.title);
+  const material = materialFor(id, title, seed.title, levelCode, explanation);
   return {
     id, title,
     description: content?.description ?? `Build a practical, context-aware understanding of ${title.toLowerCase()} using an Indian-market scenario.`,
@@ -225,13 +328,14 @@ function makeLesson(seed: ModuleSeed, title: string, order: number, levelCode: "
     prerequisites: order ? [`${levelCode}-${seed.code}-${String(order).padStart(3, "0")}`] : [],
     masteryTags: tags, status: "Draft", xp: 10,
     blocks: [
-      { type: "concept", title: "Start with the decision", body: `What would change in your next decision if you understood ${title.toLowerCase()} correctly?` },
-      { type: "visual", title: content?.conceptTitle ?? `Understanding ${title.replace("?", "")}`, body: content?.conceptBody ?? conceptFor(title, seed.title) },
-      { type: "prediction", prompt: "Choose the interpretation that respects uncertainty and market context." },
-      { type: "challenge", prompt: `Apply ${title.toLowerCase()} without turning it into a deterministic trading rule.` },
-      { type: "summary", title: "Carry forward", body: content?.takeaway ?? `Treat ${title.toLowerCase()} as evidence inside a process—not a guarantee.` },
+      { type: "concept", title: "Start with the decision", body: material.hook },
+      { type: "visual", title: content?.conceptTitle ?? `Understanding ${title.replace("?", "")}`, body: material.explanation },
+      { type: "prediction", prompt: material.question },
+      { type: "challenge", title: material.exampleTitle, prompt: material.example },
+      { type: "summary", title: "Carry forward", body: content?.takeaway ?? material.takeaway },
     ],
-    assessment: { prompt: content?.assessment ?? `Which action best applies ${title.toLowerCase()} while controlling risk?`, applicationFirst: true },
+    assessment: { prompt: content?.assessment ?? material.question, applicationFirst: true },
+    material,
   };
 }
 

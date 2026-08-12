@@ -11,6 +11,9 @@ async function render() {
   }, { waitUntil() {}, passThroughOnException() {} });
 }
 
+const contentFiles = () => Promise.all(["foundations", "applied", "professional"].map((name) =>
+  readFile(new URL(`../lib/content/${name}.ts`, import.meta.url), "utf8")));
+
 test("server-renders the Trading Academy application shell", async () => {
   const response = await render();
   assert.equal(response.status, 200);
@@ -26,16 +29,34 @@ test("server-renders the Trading Academy application shell", async () => {
 });
 
 test("ships dedicated interactive lesson content", async () => {
-  const [page, curriculum] = await Promise.all([
+  const [page, ...content] = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../lib/curriculum.ts", import.meta.url), "utf8"),
+    ...["foundations", "applied", "professional"].map((name) => readFile(new URL(`../lib/content/${name}.ts`, import.meta.url), "utf8")),
   ]);
-  for (const interaction of ["index-sim", "book-sim", "candle-sim", "rsi-sim", "contract-sim", "delta-sim", "expectancy-sim", "overfit-sim"]) {
+  for (const interaction of ["index-sim", "book-sim", "candle-sim", "rsi-sim", "contract-sim", "delta-sim", "expectancy-sim", "overfit-sim", "terms-sim", "sides-sim", "steps-sim"]) {
     assert.match(page, new RegExp(interaction));
   }
+  const authored = content.join("\n");
   for (const lessonId of ["FND-MKT-008", "FND-WORK-006", "FND-CHART-004", "FND-IND-006", "FND-RISK-007", "APP-GRK-001", "APP-OI-001", "PRO-BT-014"]) {
-    assert.match(curriculum, new RegExp(lessonId));
+    assert.match(authored, new RegExp(lessonId));
   }
-  assert.match(curriculum, /Dataset A/);
-  assert.match(curriculum, /unseen Dataset B/);
+  assert.match(authored, /Dataset A/);
+  assert.match(authored, /unseen Dataset B/);
+});
+
+test("every lesson opens on its own plain-language explanation", async () => {
+  const authored = (await contentFiles()).join("\n");
+  const plains = [...authored.matchAll(/^\s{4}plain: "((?:[^"\\]|\\.)*)"/gm)].map((match) => match[1]);
+  assert.equal(plains.length, 376, "every lesson must author a plain-language opener");
+  assert.equal(new Set(plains).size, 376, "no two lessons may share an opener");
+  // The opener is what a beginner reads first, so it must be one short sentence in plain words.
+  for (const plain of plains) assert.ok(plain.length <= 190, `opener too long to be the simplest statement: ${plain}`);
+});
+
+test("beginner lessons do not lean on index examples or ask for predictions", async () => {
+  const [foundations] = await contentFiles();
+  const niftyMentions = foundations.match(/NIFTY/g) ?? [];
+  // Only the two index lessons (NIFTY 50, SENSEX) may name the index at Foundations level.
+  assert.ok(niftyMentions.length <= 8, `Foundations mentions NIFTY ${niftyMentions.length} times`);
+  assert.doesNotMatch(foundations, /flow: "judge"/, "Foundations must not use the prediction-based judge flow");
 });

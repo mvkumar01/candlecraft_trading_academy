@@ -19,8 +19,9 @@ test("server-renders the Trading Academy application shell", async () => {
   assert.match(html, /Trading Academy/);
   assert.match(html, /Build skill/);
   assert.match(html, /Protect capital/);
-  assert.match(html, /Content Review/);
-  assert.match(html, /376/);
+  assert.doesNotMatch(html, /Content Review/);
+  assert.match(html, /Development Mode/);
+  assert.match(html, /107/);
   assert.match(html, /Risk Simulator/);
 });
 

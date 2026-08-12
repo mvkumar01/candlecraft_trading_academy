@@ -95,7 +95,7 @@ const lessonContent: Record<string, { description: string; conceptTitle: string;
   "FND-MKT-001": {
     description: "Before charts, orders or strategies, understand the system that connects people who need capital with people willing to provide it.",
     conceptTitle: "A financial market is a system for exchanging financial assets.",
-    conceptBody: "It brings buyers and sellers together under shared rules so they can trade assets such as shares, bonds, currencies and derivatives. The market may once have been a physical floor, but modern markets such as NSE and BSE are largely electronic networks.",
+    conceptBody: "It brings buyers and sellers together under shared rules so they can trade financial assets. These include shares (company ownership), bonds (tradable loans), currencies and derivatives (contracts linked to another asset). Modern exchanges such as India’s NSE and BSE are largely electronic networks.",
     takeaway: "A financial market is the organised system—not a single building—where financial assets are issued, bought and sold under shared rules.",
     assessment: "Which description best captures what a financial market is?",
   },
@@ -133,7 +133,7 @@ const modulePrimer: Record<string, string> = {
 };
 
 const exactConcept: Record<string, string> = {
-  "Why do financial markets exist?": "They move savings toward productive uses, let investors transfer ownership, provide liquidity and create observable prices through competing orders.",
+  "Why do financial markets exist?": "They move savings toward productive uses, let investors transfer ownership, make assets easier to buy or sell (liquidity), and create observable prices as buy and sell instructions compete.",
   "What is a company share?": "A share is a unit of ownership in a company. Its holder has an economic claim defined by the share class, but no guaranteed return.",
   "Why do companies issue shares?": "Companies issue shares to raise permanent capital for growth, investment or balance-sheet needs in exchange for giving investors ownership.",
   "Primary vs secondary markets": "In the primary market, newly issued securities raise money for the issuer. In the secondary market, investors trade existing securities with one another.",

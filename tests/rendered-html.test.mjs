@@ -11,7 +11,9 @@ async function render() {
   }, { waitUntil() {}, passThroughOnException() {} });
 }
 
-const contentFiles = () => Promise.all(["foundations", "applied", "professional"].map((name) =>
+const contentNames = ["foundations", "applied", "professional", "horizons", "screening", "swing", "intraday", "positional", "workflow"];
+
+const contentFiles = () => Promise.all(contentNames.map((name) =>
   readFile(new URL(`../lib/content/${name}.ts`, import.meta.url), "utf8")));
 
 test("server-renders the Trading Academy application shell", async () => {
@@ -23,18 +25,23 @@ test("server-renders the Trading Academy application shell", async () => {
   assert.match(html, /Build skill/);
   assert.match(html, /Protect capital/);
   assert.doesNotMatch(html, /Content Review/);
-  assert.match(html, /Development Mode/);
-  assert.match(html, /107/);
+  // The mode switch ships in the shell; Content Review stays hidden until Review mode is chosen.
+  assert.match(html, /User/);
+  assert.match(html, /Lessons unlock in order/);
+  assert.match(html, /124/);
   assert.match(html, /Risk Simulator/);
 });
 
 test("ships dedicated interactive lesson content", async () => {
   const [page, ...content] = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
-    ...["foundations", "applied", "professional"].map((name) => readFile(new URL(`../lib/content/${name}.ts`, import.meta.url), "utf8")),
+    ...contentNames.map((name) => readFile(new URL(`../lib/content/${name}.ts`, import.meta.url), "utf8")),
   ]);
   for (const interaction of ["index-sim", "book-sim", "candle-sim", "rsi-sim", "contract-sim", "delta-sim", "expectancy-sim", "overfit-sim", "terms-sim", "sides-sim", "steps-sim"]) {
     assert.match(page, new RegExp(interaction));
+  }
+  for (const component of ["HorizonSim", "ScreenerSim", "RankingSim", "ReplaySim", "SwingSim", "WorkflowSim", "practicalLabs"]) {
+    assert.match(page, new RegExp(component));
   }
   const authored = content.join("\n");
   for (const lessonId of ["FND-MKT-008", "FND-WORK-006", "FND-CHART-004", "FND-IND-006", "FND-RISK-007", "APP-GRK-001", "APP-OI-001", "PRO-BT-014"]) {
@@ -47,8 +54,8 @@ test("ships dedicated interactive lesson content", async () => {
 test("every lesson opens on its own plain-language explanation", async () => {
   const authored = (await contentFiles()).join("\n");
   const plains = [...authored.matchAll(/^\s{4}plain: "((?:[^"\\]|\\.)*)"/gm)].map((match) => match[1]);
-  assert.equal(plains.length, 376, "every lesson must author a plain-language opener");
-  assert.equal(new Set(plains).size, 376, "no two lessons may share an opener");
+  assert.equal(plains.length, 537, "every lesson must author a plain-language opener");
+  assert.equal(new Set(plains).size, 537, "no two lessons may share an opener");
   // The opener is what a beginner reads first, so it must be one short sentence in plain words.
   for (const plain of plains) assert.ok(plain.length <= 190, `opener too long to be the simplest statement: ${plain}`);
 });
@@ -59,4 +66,53 @@ test("beginner lessons do not lean on index examples or ask for predictions", as
   // Only the two index lessons (NIFTY 50, SENSEX) may name the index at Foundations level.
   assert.ok(niftyMentions.length <= 8, `Foundations mentions NIFTY ${niftyMentions.length} times`);
   assert.doesNotMatch(foundations, /flow: "judge"/, "Foundations must not use the prediction-based judge flow");
+});
+
+test("the practical modules are wired end to end", async () => {
+  const [practice, curriculum, ...content] = await Promise.all([
+    readFile(new URL("../app/practice.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../lib/curriculum.ts", import.meta.url), "utf8"),
+    ...contentNames.map((name) => readFile(new URL(`../lib/content/${name}.ts`, import.meta.url), "utf8")),
+  ]);
+  // Every new lab has both a curriculum entry and a component behind it.
+  for (const lab of ["Horizon Lab", "Screener Lab", "Swing Setup Lab", "Market Replay Lab", "Stock Selection Lab", "Trade Workflow Lab"]) {
+    assert.match(curriculum, new RegExp(lab), `${lab} missing from curriculum`);
+    assert.match(practice, new RegExp(lab), `${lab} has no component`);
+  }
+  // The first and last lesson of each new module exists.
+  const authored = content.join("\n");
+  for (const id of ["FND-HZN-001", "FND-HZN-009", "FND-PICK-001", "FND-PICK-008", "APP-SCR-001", "APP-SCR-020",
+    "APP-SWG-001", "APP-SWG-026", "APP-DAY-001", "APP-DAY-032", "APP-PSN-001", "APP-PSN-029",
+    "APP-FIND-001", "APP-FIND-013", "PRO-SSCR-001", "PRO-SSCR-012", "PRO-PORT-001", "PRO-PORT-012"]) {
+    assert.match(authored, new RegExp(id), `${id} has no authored content`);
+  }
+});
+
+test("practical company data is fictional and labelled", async () => {
+  const [data, practice] = await Promise.all([
+    readFile(new URL("../lib/market-data.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/practice.tsx", import.meta.url), "utf8"),
+  ]);
+  assert.match(data, /Every company here is fictional/);
+  // The learner must be told the universe is synthetic wherever the data is shown.
+  assert.match(practice, /Fictional companies, synthetic data/);
+  assert.match(practice, /synthetic/i);
+});
+
+test("Review mode unlocks every lesson and User mode does not", async () => {
+  const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
+  // Both modes exist and are persisted.
+  assert.match(page, /type Mode = "user" \| "review"/);
+  assert.match(page, /mode: Mode/);
+  // Sessions saved under the old devMode flag keep their setting.
+  assert.match(page, /parsed\.devMode \? "review" : "user"/);
+  // Every gate reads the derived review flag rather than a separate switch.
+  assert.match(page, /function levelUnlocked\(level: CourseLevel, completed: Set<string>, review: boolean\) \{ return review \|\|/);
+  assert.match(page, /review \|\| lessonIndex === 0/);
+  assert.match(page, /\(!review && !priorComplete\)/);
+  // Content Review is reachable only in Review mode.
+  assert.match(page, /\{review && <button className=\{`review-entry/);
+  // Dropping back to User mode cannot strand you somewhere User mode can't reach.
+  assert.match(page, /if\(page==="content"\) setPage\("home"\)/);
+  assert.match(page, /!lessonUnlocked\(lesson,new Set\(state\.completed\)\)/);
 });

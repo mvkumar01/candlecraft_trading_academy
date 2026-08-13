@@ -1,4 +1,4 @@
-import { allLessons, missingContent, type Lesson } from "../lib/curriculum.ts";
+import { allLessons, course, labs, missingContent, type Lesson } from "../lib/curriculum.ts";
 
 /** Strip a lesson's own title and module out of a string. Two lessons whose text collapses to
  *  the same skeleton are the same sentence with the nouns swapped — the templated-phrasing
@@ -41,6 +41,11 @@ const answerPositions = Object.fromEntries([0, 1, 2, 3].map((i) => [i, allLesson
 const missingSides = allLessons.filter((l) => l.material.flow === "compare" && !l.material.sides).map((l) => l.id);
 const missingSteps = allLessons.filter((l) => l.material.flow === "sequence" && !l.material.steps).map((l) => l.id);
 
+const practical = allLessons.filter((lesson) => lesson.track === "practical");
+const crossModulePrereqs = allLessons.filter((lesson) => lesson.order === 1 && lesson.prerequisites.length);
+const danglingPrereqs = allLessons.flatMap((lesson) => lesson.prerequisites.filter((id) => !allLessons.some((other) => other.id === id)).map((id) => `${lesson.id} → ${id}`));
+const labsWithoutModule = labs.filter((lab) => !course.some((level) => level.modules.some((module) => module.lab === lab)));
+
 const result = {
   total: allLessons.length,
   levels: Object.fromEntries(["FND", "APP", "PRO"].map((code) => [code, allLessons.filter((l) => l.levelCode === code).length])),
@@ -56,12 +61,18 @@ const result = {
   badCorrect,
   missingSides,
   missingSteps,
+  practicalLessons: practical.length,
+  practicalModules: course.flatMap((level) => level.modules).filter((module) => module.track === "practical").map((module) => `${module.code} (${module.lessons.length})`),
+  crossModulePrereqs: crossModulePrereqs.map((lesson) => `${lesson.id} ← ${lesson.prerequisites.join(", ")}`),
+  danglingPrereqs,
+  labsWithoutModule,
+  allDraft: allLessons.every((lesson) => lesson.status === "Draft"),
 };
 
 console.log(JSON.stringify(result, null, 2));
 
 const failures: string[] = [];
-if (allLessons.length !== 376) failures.push(`expected 376 lessons, found ${allLessons.length}`);
+if (allLessons.length !== 537) failures.push(`expected 537 lessons, found ${allLessons.length}`);
 if (missingContent.length) failures.push(`${missingContent.length} lessons without authored content: ${missingContent.slice(0, 5).join(", ")}…`);
 // No sentence skeleton may be shared by more than 3 lessons — beyond that it reads as generated.
 for (const entry of templated) if (entry.largestGroup > 3) failures.push(`${entry.field}: ${entry.largestGroup} lessons share one phrasing skeleton (${entry.example.join(", ")})`);
@@ -71,6 +82,14 @@ if (fndPrediction.length) failures.push(`${fndPrediction.length} Foundations les
 // A curriculum where every lesson has the same shape is one lesson repeated.
 if (shapes.size < 6) failures.push(`only ${shapes.size} distinct block sequences across the course`);
 if (badChoices.length) failures.push(`malformed choices: ${badChoices.join(", ")}`);
+// A prerequisite pointing at a lesson that does not exist would silently lock a module forever.
+if (danglingPrereqs.length) failures.push(`prerequisites referencing unknown lessons: ${danglingPrereqs.join(", ")}`);
+// Practical labs must be reachable from the module that teaches them. (Three older labs —
+// Position Sizing, Delta, Overfitting — are reachable only from the Labs page; left as found.)
+const practicalLabs = ["Horizon Lab", "Screener Lab", "Swing Setup Lab", "Market Replay Lab", "Stock Selection Lab", "Trade Workflow Lab"];
+const orphanedPracticalLabs = practicalLabs.filter((lab) => labsWithoutModule.includes(lab));
+if (orphanedPracticalLabs.length) failures.push(`practical labs not attached to a module: ${orphanedPracticalLabs.join(", ")}`);
+if (!allLessons.every((lesson) => lesson.status === "Draft")) failures.push("some lessons are not marked Draft");
 if (badCorrect.length) failures.push(`correct index out of range: ${badCorrect.join(", ")}`);
 if (missingSides.length) failures.push(`compare-flow lessons without a comparison table: ${missingSides.join(", ")}`);
 if (missingSteps.length) failures.push(`sequence-flow lessons without steps: ${missingSteps.join(", ")}`);

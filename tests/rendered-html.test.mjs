@@ -11,7 +11,7 @@ async function render() {
   }, { waitUntil() {}, passThroughOnException() {} });
 }
 
-const contentNames = ["foundations", "applied", "professional", "horizons", "screening", "swing", "intraday", "positional", "workflow"];
+const contentNames = ["foundations", "applied", "professional", "horizons", "screening", "swing", "intraday", "positional", "workflow", "candles", "patterns"];
 
 const contentFiles = () => Promise.all(contentNames.map((name) =>
   readFile(new URL(`../lib/content/${name}.ts`, import.meta.url), "utf8")));
@@ -28,7 +28,7 @@ test("server-renders the Trading Academy application shell", async () => {
   // The mode switch ships in the shell; Content Review stays hidden until Review mode is chosen.
   assert.match(html, /User/);
   assert.match(html, /Lessons unlock in order/);
-  assert.match(html, /124/);
+  assert.match(html, /138/);
   assert.match(html, /Risk Simulator/);
 });
 
@@ -54,8 +54,8 @@ test("ships dedicated interactive lesson content", async () => {
 test("every lesson opens on its own plain-language explanation", async () => {
   const authored = (await contentFiles()).join("\n");
   const plains = [...authored.matchAll(/^\s{4}plain: "((?:[^"\\]|\\.)*)"/gm)].map((match) => match[1]);
-  assert.equal(plains.length, 537, "every lesson must author a plain-language opener");
-  assert.equal(new Set(plains).size, 537, "no two lessons may share an opener");
+  assert.equal(plains.length, 575, "every lesson must author a plain-language opener");
+  assert.equal(new Set(plains).size, 575, "no two lessons may share an opener");
   // The opener is what a beginner reads first, so it must be one short sentence in plain words.
   for (const plain of plains) assert.ok(plain.length <= 190, `opener too long to be the simplest statement: ${plain}`);
 });
@@ -75,7 +75,7 @@ test("the practical modules are wired end to end", async () => {
     ...contentNames.map((name) => readFile(new URL(`../lib/content/${name}.ts`, import.meta.url), "utf8")),
   ]);
   // Every new lab has both a curriculum entry and a component behind it.
-  for (const lab of ["Horizon Lab", "Screener Lab", "Swing Setup Lab", "Market Replay Lab", "Stock Selection Lab", "Trade Workflow Lab"]) {
+  for (const lab of ["Horizon Lab", "Screener Lab", "Swing Setup Lab", "Market Replay Lab", "Stock Selection Lab", "Trade Workflow Lab", "Pattern Lab"]) {
     assert.match(curriculum, new RegExp(lab), `${lab} missing from curriculum`);
     assert.match(practice, new RegExp(lab), `${lab} has no component`);
   }

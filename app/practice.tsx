@@ -5,14 +5,19 @@ import {
   replaySession, runScreen, screenFilters, sectors, swingScenarios, universe,
   type Candle, type ScreenFilter, type Stock,
 } from "../lib/market-data";
+import { candlePatternById, chartPatternById, chartPatterns, type ChartPattern } from "../lib/pattern-data";
 
 const money = (value: number) => `₹${Math.round(value).toLocaleString("en-IN")}`;
 const sizeFor = (budget: number, entry: number, stop: number) => Math.max(0, Math.floor(budget / Math.max(0.05, entry - stop)));
 
 /** Shared candle renderer. `visible` truncates the series so a replay can hide the future —
  *  the scale is computed from the visible bars only, otherwise the axis leaks the outcome. */
-function CandleChart({ candles, visible, levels = [], height = 190, marker }: {
+function CandleChart({ candles, visible, levels = [], height = 190, marker, minSlots = 20, highlightFrom }: {
   candles: Candle[]; visible?: number; levels?: { price: number; label: string; tone?: "stop" | "entry" | "target" }[]; height?: number; marker?: number;
+  /** Lower this so a three-candle pattern fills the frame instead of hiding in a corner. */
+  minSlots?: number;
+  /** Index from which candles are the pattern itself rather than the context before it. */
+  highlightFrom?: number;
 }) {
   const shown = candles.slice(0, visible ?? candles.length);
   if (!shown.length) return null;
@@ -21,7 +26,7 @@ function CandleChart({ candles, visible, levels = [], height = 190, marker }: {
   const pad = (top - bottom) * 0.08 || 1;
   const hi = top + pad, lo = bottom - pad;
   const width = 640;
-  const step = width / Math.max(20, candles.length);
+  const step = width / Math.max(minSlots, candles.length);
   const y = (price: number) => ((hi - price) / (hi - lo)) * height;
   return (
     <svg className="candle-chart" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" role="img" aria-label="Synthetic price chart">
@@ -39,7 +44,8 @@ function CandleChart({ candles, visible, levels = [], height = 190, marker }: {
         const bodyHeight = Math.max(1, y(Math.min(candle.o, candle.c)) - bodyTop);
         return (
           <g key={index}>
-            <line x1={x} x2={x} y1={y(candle.h)} y2={y(candle.l)} stroke={colour} strokeWidth={0.9} />
+            {highlightFrom !== undefined && index >= highlightFrom && <rect x={x - step * 0.46} y={0} width={step * 0.92} height={height} fill="#c6f05f" opacity={0.09} />}
+            <line x1={x} x2={x} y1={y(candle.h)} y2={y(candle.l)} stroke={colour} strokeWidth={minSlots < 12 ? 2 : 0.9} />
             <rect x={x - step * 0.32} y={bodyTop} width={step * 0.64} height={bodyHeight} fill={colour} />
           </g>
         );
@@ -544,6 +550,144 @@ export function TradeWorkflowLab() {
   );
 }
 
+
+// ── Pattern interactions ────────────────────────────────────────────────────
+/** Which pattern each lesson illustrates. Explicit rather than derived from the title, so
+ *  renaming a lesson cannot silently swap the chart underneath it. */
+const candleForLesson: Record<string, [string, string?]> = {
+  "FND-CANDLE-001": ["hammer"], "FND-CANDLE-002": ["doji"], "FND-CANDLE-003": ["hammer"],
+  "FND-CANDLE-004": ["shooting-star"], "FND-CANDLE-005": ["bullish-engulfing"], "FND-CANDLE-006": ["bearish-engulfing", "bullish-engulfing"],
+  "FND-CANDLE-007": ["harami", "bullish-engulfing"], "FND-CANDLE-008": ["morning-star"], "FND-CANDLE-009": ["evening-star"],
+  "FND-CANDLE-010": ["hammer", "hanging-man"], "FND-CANDLE-011": ["shooting-star"], "FND-CANDLE-012": ["hammer"],
+  "FND-CANDLE-013": ["bullish-engulfing"], "FND-CANDLE-014": ["doji"],
+};
+
+const chartForLesson: Record<string, string> = {
+  "APP-PAT-001": "ascending-triangle", "APP-PAT-002": "rectangle", "APP-PAT-003": "bull-flag", "APP-PAT-004": "rectangle",
+  "APP-PAT-005": "symmetrical-triangle", "APP-PAT-006": "ascending-triangle", "APP-PAT-007": "descending-triangle",
+  "APP-PAT-008": "bull-flag", "APP-PAT-009": "pennant", "APP-PAT-010": "rising-wedge", "APP-PAT-011": "falling-wedge",
+  "APP-PAT-012": "head-shoulders", "APP-PAT-013": "inverse-head-shoulders", "APP-PAT-014": "double-top",
+  "APP-PAT-015": "double-bottom", "APP-PAT-016": "cup-handle", "APP-PAT-017": "rectangle", "APP-PAT-018": "bull-flag",
+  "APP-PAT-019": "rectangle", "APP-PAT-020": "rectangle", "APP-PAT-021": "head-shoulders", "APP-PAT-022": "rectangle",
+  "APP-PAT-023": "head-shoulders", "APP-PAT-024": "ascending-triangle",
+};
+
+export function CandlePatternSim({ lessonId }: { lessonId: string }) {
+  const [primary, alternate] = candleForLesson[lessonId] ?? ["hammer"];
+  const [showAlternate, setShowAlternate] = useState(false);
+  const [face, setFace] = useState<"records" | "cannot">("records");
+  const pattern = candlePatternById(showAlternate && alternate ? alternate : primary);
+  return (
+    <div className="lesson-sim candle-pattern-sim">
+      <div className="cp-head"><b>{pattern.name}</b><span>{pattern.bias}</span></div>
+      <CandleChart candles={pattern.candles} height={150} minSlots={pattern.candles.length + 1}
+        highlightFrom={pattern.candles.length - pattern.patternBars} />
+      {alternate && (
+        <button className="cp-swap" onClick={() => setShowAlternate(!showAlternate)}>
+          Compare with {candlePatternById(showAlternate ? primary : alternate).name} →
+        </button>
+      )}
+      <div className="cp-tabs">
+        <button className={face === "records" ? "active" : ""} onClick={() => setFace("records")}>What it records</button>
+        <button className={face === "cannot" ? "active" : ""} onClick={() => setFace("cannot")}>What it cannot</button>
+      </div>
+      <p>{face === "records" ? pattern.reading : pattern.caution}</p>
+    </div>
+  );
+}
+
+export function ChartPatternSim({ lessonId }: { lessonId: string }) {
+  const pattern = chartPatternById(chartForLesson[lessonId] ?? "rectangle");
+  const [outcome, setOutcome] = useState<"forming" | "worked" | "failed">("forming");
+  const candles = outcome === "forming" ? pattern.history
+    : [...pattern.history, ...(outcome === "worked" ? pattern.worked : pattern.failed)];
+  return (
+    <div className="lesson-sim chart-pattern-sim">
+      <div className="cp-head"><b>{pattern.name}</b><span>{pattern.kind}</span></div>
+      <CandleChart candles={candles} height={155}
+        levels={[{ price: pattern.trigger, label: `trigger ${pattern.trigger}`, tone: "entry" }, { price: pattern.invalidation, label: `invalid ${pattern.invalidation}`, tone: "stop" }]} />
+      <div className="cp-outcomes">
+        {(["forming", "worked", "failed"] as const).map((option) => (
+          <button key={option} className={outcome === option ? "active" : ""} onClick={() => setOutcome(option)}>
+            {option === "forming" ? "Forming" : option === "worked" ? "If it works" : "If it fails"}
+          </button>
+        ))}
+      </div>
+      <p>{outcome === "forming" ? pattern.shape : outcome === "worked" ? pattern.captures : pattern.breaks}</p>
+      {outcome !== "forming" && <p className="cp-note">Same shape, same volume, two futures. Which one you get is not in the chart.</p>}
+    </div>
+  );
+}
+
+// ── Pattern Lab ─────────────────────────────────────────────────────────────
+/** Deterministic distractors, so the same pattern always offers the same four names. */
+function nameOptions(pattern: ChartPattern) {
+  const others = chartPatterns.filter((item) => item.id !== pattern.id);
+  const picks = [0, 1, 2].map((offset) => others[(pattern.name.length * 3 + offset * 5) % others.length].name);
+  return [...new Set([pattern.name, ...picks])].slice(0, 4).sort();
+}
+
+export function PatternLab() {
+  const [index, setIndex] = useState(0);
+  const [kind, setKind] = useState<string | null>(null);
+  const [named, setNamed] = useState<string | null>(null);
+  const [outcome, setOutcome] = useState<"worked" | "failed" | null>(null);
+  const pattern = chartPatterns[index % chartPatterns.length];
+  const options = nameOptions(pattern);
+  const answered = kind !== null && named !== null;
+  const next = () => { setIndex(index + 1); setKind(null); setNamed(null); setOutcome(null); };
+  return (
+    <div className="lab-workbench pattern-lab">
+      <section className="lab-controls">
+        <h2>Read the chart</h2>
+        <div className="plan-step">
+          <span>1. Continuation or reversal?</span>
+          <div>{["continuation", "reversal"].map((option) => (
+            <button key={option} className={kind === option ? "active" : ""} onClick={() => setKind(option)} disabled={outcome !== null}>{option}</button>
+          ))}</div>
+        </div>
+        <div className="plan-step">
+          <span>2. What is this pattern called?</span>
+          <div>{options.map((option) => (
+            <button key={option} className={named === option ? "active" : ""} onClick={() => setNamed(option)} disabled={outcome !== null}>{option}</button>
+          ))}</div>
+        </div>
+        {answered && outcome === null && (
+          <div className="lab-note">
+            <b>{kind === pattern.kind ? "Kind: correct" : `Kind: it is a ${pattern.kind}`} · {named === pattern.name ? "Name: correct" : `Name: ${pattern.name}`}</b>
+            <p>{pattern.shape}</p>
+          </div>
+        )}
+        {answered && (
+          <div className="plan-step">
+            <span>3. Now pick a future — both are real possibilities from here.</span>
+            <div>
+              <button className={outcome === "worked" ? "active" : ""} onClick={() => setOutcome("worked")}>It completes</button>
+              <button className={outcome === "failed" ? "active" : ""} onClick={() => setOutcome("failed")}>It fails</button>
+            </div>
+          </div>
+        )}
+        <div className="lab-note"><b>Fictional companies, synthetic data.</b><p>Naming the shape is the easy half. What it is trying to capture, and what breaks it, is the half that matters.</p></div>
+      </section>
+      <section className="lab-output">
+        <div className="lab-title-row"><span>PATTERN {(index % chartPatterns.length) + 1} OF {chartPatterns.length} · daily · synthetic</span><b>{answered ? pattern.name : "Unnamed"}</b></div>
+        <CandleChart height={240}
+          candles={outcome === null ? pattern.history : [...pattern.history, ...(outcome === "worked" ? pattern.worked : pattern.failed)]}
+          levels={answered ? [{ price: pattern.trigger, label: `trigger ${pattern.trigger}`, tone: "entry" }, { price: pattern.invalidation, label: `invalid ${pattern.invalidation}`, tone: "stop" }] : []} />
+        {!answered && <p className="inspect-prompt">Answer both questions before the levels are drawn. Reading the shape first is the point.</p>}
+        {outcome !== null && (
+          <div className="reveal-card">
+            <b>{outcome === "worked" ? "This time it completed" : "This time it failed"}</b>
+            <p>{outcome === "worked" ? pattern.captures : pattern.breaks}</p>
+            <p className="reveal-note">Both futures were generated from this same base. Nothing in the shape, the volume or the levels chose between them — which is why the trigger, the stop and the size are the parts of a pattern trade you actually control.</p>
+            <button className="button-primary" onClick={next}>Next pattern →</button>
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
+
 export const practicalLabs: Record<string, () => React.JSX.Element> = {
   "Horizon Lab": HorizonLab,
   "Screener Lab": ScreenerLab,
@@ -551,4 +695,5 @@ export const practicalLabs: Record<string, () => React.JSX.Element> = {
   "Market Replay Lab": MarketReplayLab,
   "Stock Selection Lab": StockSelectionLab,
   "Trade Workflow Lab": TradeWorkflowLab,
+  "Pattern Lab": PatternLab,
 };

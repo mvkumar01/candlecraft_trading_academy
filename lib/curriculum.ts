@@ -7,6 +7,8 @@ import { swingContent } from "./content/swing.ts";
 import { intradayContent } from "./content/intraday.ts";
 import { positionalContent } from "./content/positional.ts";
 import { workflowContent } from "./content/workflow.ts";
+import { candlesContent } from "./content/candles.ts";
+import { patternsContent } from "./content/patterns.ts";
 
 export const PRODUCT_NAME = "Trading Academy";
 
@@ -25,7 +27,8 @@ export type FlowKind = "define" | "compare" | "build" | "calculate" | "classify"
 export type InteractionKind =
   | "terms" | "steps" | "sides" | "index" | "order_book" | "candle" | "rsi" | "contracts"
   | "delta" | "expectancy" | "overfitting" | "payoff" | "pnl" | "risk" | "classification" | "scenario"
-  | "horizon" | "screener" | "ranking" | "replay" | "swing" | "workflow";
+  | "horizon" | "screener" | "ranking" | "replay" | "swing" | "workflow"
+  | "candle_pattern" | "chart_pattern";
 
 /** Authored lesson content. Every lesson has its own; nothing here is generated from a template.
  *  `plain` is deliberately the first thing a learner reads: the simplest true sentence about
@@ -91,6 +94,7 @@ const foundations: ModuleSeed[] = [
   { code: "CHART", title: "Reading Charts", blurb: "How a chart stores price, and what it quietly leaves out.", lab: "Candlestick Lab", lessons: ["What is a price chart?", "Timeframes", "OHLC", "Candlestick anatomy", "Bullish candles", "Bearish candles", "Candle body", "Wicks", "What a candle tells you", "What a candle does NOT tell you", "Line charts vs candlestick charts", "Choosing timeframes"] },
   { code: "HZN", title: "Trading Horizons", blurb: "How long you intend to hold, and everything that follows from it.", lab: "Horizon Lab", track: "practical", requires: ["FND-CHART-012", "FND-WORK-015"], lessons: ["What is a trading horizon?", "Intraday: minutes to hours", "Swing: days to weeks", "Positional: weeks to months", "Investing: months to years", "How horizon changes the chart you read", "How horizon changes stop distance and size", "How horizon changes costs and event exposure", "Choosing a horizon that fits your life"] },
   { code: "STRUCT", title: "Market Structure", blurb: "Reading a chart as a sequence of highs and lows.", lab: "Market Structure Lab", lessons: ["Trend", "Uptrend", "Downtrend", "Range", "Higher highs", "Higher lows", "Lower highs", "Lower lows", "Support", "Resistance", "Breakouts", "False breakouts", "Trend reversal", "Market context"] },
+  { code: "CANDLE", title: "Candlestick Patterns", blurb: "Named candle shapes — and why the shape never carries the meaning.", lab: "Candlestick Lab", track: "practical", requires: ["FND-CHART-010", "FND-STRUCT-014"], lessons: ["What is a candlestick pattern?", "Doji", "Hammer", "Shooting star", "Bullish engulfing", "Bearish engulfing", "Harami", "Morning star", "Evening star", "Hammer vs hanging man", "Why the close matters most", "Confirmation candles", "How often candlestick patterns work", "Reading candles without naming them"] },
   { code: "VOL", title: "Volume and Volatility", blurb: "How much trading happened, and how far price moved.", lab: "Volatility Lab", lessons: ["What is volume?", "Why volume matters", "Volume expansion", "Volume contraction", "What is volatility?", "High-volatility markets", "Low-volatility markets", "ATR introduction", "Volatility and stop losses", "Why volatility changes"] },
   { code: "IND", title: "Indicators", blurb: "Formulas that re-describe price — and what they cannot add.", lab: "RSI Lab", lessons: ["What is an indicator?", "Indicators are derived from price", "Moving averages", "SMA", "EMA", "RSI", "RSI calculation conceptually", "Overbought and oversold", "Why RSI below 30 does NOT automatically mean Buy", "ATR", "Indicator lag", "Combining indicators", "Indicators vs market structure"] },
   { code: "PICK", title: "Finding Stocks to Trade", blurb: "Turning a market of thousands into a list you can actually read.", lab: "Screener Lab", track: "practical", requires: ["FND-IND-013", "FND-HZN-009"], lessons: ["Where trade ideas come from", "Why liquidity comes first", "Filtering a long list", "Price and volume filters", "A shortlist is not a trade", "Market and sector context", "Comparing two candidates", "Why most candidates are rejected"] },
@@ -99,6 +103,7 @@ const foundations: ModuleSeed[] = [
 
 const applied: ModuleSeed[] = [
   { code: "PA", title: "Price Action", blurb: "Reading swings and rejection in the context around them.", lab: "Market Structure Lab", lessons: ["Reading price in context", "Swing highs and lows", "Break of structure", "Trend continuation", "Trend exhaustion", "Compression", "Expansion", "Rejection", "Failed breakouts", "Price action traps", "Context before pattern"] },
+  { code: "PAT", title: "Chart Patterns", blurb: "Named swing arrangements: what each one captures, and what breaks it.", lab: "Pattern Lab", track: "practical", requires: ["APP-PA-011", "FND-CANDLE-014"], lessons: ["What is a chart pattern?", "Why patterns sometimes work", "Continuation vs reversal patterns", "Rectangles", "Symmetrical triangles", "Ascending triangles", "Descending triangles", "Bull flags", "Pennants", "Rising wedges", "Falling wedges", "Head and shoulders", "Inverse head and shoulders", "Double tops", "Double bottoms", "Cup and handle", "The measured move", "Volume inside a pattern", "The trigger: where a pattern completes", "Where the stop belongs", "When patterns fail", "Trading the failure", "Patterns are drawn, not found", "Trading a pattern end to end"] },
   { code: "MTF", title: "Multi-Timeframe Analysis", blurb: "Using two timeframes for two different jobs.", lessons: ["Why timeframe matters", "Higher timeframe structure", "Lower timeframe execution", "Conflicting timeframes", "Trend alignment", "When multiple timeframes confuse rather than help", "Building a timeframe framework"] },
   { code: "MOM", title: "Momentum Trading", blurb: "Trading continuation, and defining where it has failed.", lab: "RSI Lab", lessons: ["What is momentum?", "Momentum continuation", "Breakout momentum", "Relative strength", "Momentum indicators", "Momentum failure", "Entries", "Stops", "Exits", "Momentum strategy example"] },
   { code: "MR", title: "Mean Reversion", blurb: "Trading the snap-back — and knowing when it stops working.", lab: "RSI Lab", lessons: ["What is mean reversion?", "Trend vs mean reversion", "Statistical intuition", "RSI and mean reversion", "Moving-average distance", "Volatility extremes", "Failed mean reversion", "Regime dependence", "Entry logic", "Exit logic"] },
@@ -141,6 +146,7 @@ const masteryFor = (title: string, moduleTitle: string) => {
     ["trading horizons", "trading horizons"], ["finding stocks to trade", "screening"], ["stock screening", "screening"],
     ["systematic screening", "screening"], ["swing trading", "swing trading"], ["intraday trading", "intraday trading"],
     ["positional trading", "positional trading"], ["finding a trade", "trade workflow"], ["portfolio construction", "portfolio construction"],
+    ["chart patterns", "chart patterns"],
   ].filter(([needle]) => text.includes(needle)).map(([, tag]) => tag);
   return tags.length ? [...new Set(tags)].slice(0, 3) : [moduleTitle.toLowerCase()];
 };
@@ -148,6 +154,7 @@ const masteryFor = (title: string, moduleTitle: string) => {
 const authored: Record<string, Authored> = {
   ...foundationsContent, ...appliedContent, ...professionalContent,
   ...horizonsContent, ...screeningContent, ...swingContent, ...intradayContent, ...positionalContent, ...workflowContent,
+  ...candlesContent, ...patternsContent,
 };
 
 /** Lessons still waiting for authored content. The content audit fails while this is non-empty. */
@@ -246,10 +253,10 @@ export const allLessons = course.flatMap((level) => level.modules.flatMap((modul
 
 export const labs = [
   "Candlestick Lab", "Order Book Lab", "Market Structure Lab", "RSI Lab", "Position Sizing Lab", "Risk Simulator", "Futures Simulator", "Options Basics Lab", "Delta Lab", "Greeks Lab", "Option Chain Lab", "OI Classification Lab", "Volatility Lab", "Payoff Builder", "Hedging Lab", "Market Regime Lab", "Strategy Builder", "Backtesting Lab", "Overfitting Lab", "Strategy Comparison Lab",
-  "Horizon Lab", "Screener Lab", "Swing Setup Lab", "Market Replay Lab", "Stock Selection Lab", "Trade Workflow Lab",
+  "Horizon Lab", "Screener Lab", "Swing Setup Lab", "Market Replay Lab", "Stock Selection Lab", "Trade Workflow Lab", "Pattern Lab",
 ];
 
-export const masteryTopics = ["market basics", "orders", "charts", "candlesticks", "market structure", "volume", "volatility", "RSI", "risk", "position sizing", "futures", "options", "Delta", "Gamma", "Theta", "Vega", "OI", "option chain", "strategy construction", "market regimes", "backtesting", "expectancy", "drawdown", "systematic trading", "trading horizons", "screening", "swing trading", "intraday trading", "positional trading", "trade workflow", "portfolio construction"];
+export const masteryTopics = ["market basics", "orders", "charts", "candlesticks", "market structure", "volume", "volatility", "RSI", "risk", "position sizing", "futures", "options", "Delta", "Gamma", "Theta", "Vega", "OI", "option chain", "strategy construction", "market regimes", "backtesting", "expectancy", "drawdown", "systematic trading", "trading horizons", "screening", "swing trading", "intraday trading", "positional trading", "trade workflow", "portfolio construction", "chart patterns"];
 
 export const badges = ["Market Explorer", "Chart Reader", "Risk First", "Market Structure Analyst", "Futures Explorer", "Options Explorer", "Greeks Apprentice", "Greeks Master", "OI Analyst", "Volatility Analyst", "Strategy Builder", "Backtester", "Risk Manager", "Systematic Trader"];
 

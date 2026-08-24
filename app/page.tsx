@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { PRODUCT_NAME, allLessons, badges, course, labs, masteryTopics, supportedBlockTypes, type CourseLevel, type Lesson } from "../lib/curriculum";
-import { HorizonSim, RankingSim, ReplaySim, ScreenerSim, SwingSim, WorkflowSim, practicalLabs } from "./practice";
+import { CandlePatternSim, ChartPatternSim, HorizonSim, RankingSim, ReplaySim, ScreenerSim, SwingSim, WorkflowSim, practicalLabs } from "./practice";
 
 type Page = "home" | "learn" | "labs" | "review" | "progress" | "content" | "lesson" | "lab";
 /** User mode runs the normal sequential progression. Review mode unlocks every lesson and
@@ -115,6 +115,8 @@ function LessonInteractive({ lesson }: { lesson: Lesson }) {
   if(kind === "pnl") { const move=x-50; return <div className="lesson-sim pnl-sim"><label>NIFTY move<input type="range" min="0" max="100" value={x} onChange={e=>setX(Number(e.target.value))}/><b>{move>=0?"+":""}{move} points</b></label><div><span>LONG FUTURE <b className={move>=0?"positive":"negative"}>{move>=0?"+":"−"}₹{Math.abs(move*75).toLocaleString("en-IN")}</b></span><span>SHORT FUTURE <b className={move<=0?"positive":"negative"}>{move<=0?"+":"−"}₹{Math.abs(move*75).toLocaleString("en-IN")}</b></span></div><p>Illustrative multiplier. Margin does not cap the loss.</p></div> }
   if(kind === "risk") { const risk=Math.max(.5,x/20),capital=100000,loss=capital*risk/100; return <div className="lesson-sim risk-sim"><label>Risk per trade<input type="range" min="10" max="200" value={x} onChange={e=>setX(Number(e.target.value))}/><b>{risk.toFixed(1)}%</b></label><div><span>PLANNED LOSS</span><b>₹{loss.toLocaleString("en-IN")}</b></div><div><span>AFTER 5 LOSSES</span><b>₹{Math.round(capital*Math.pow(1-risk/100,5)).toLocaleString("en-IN")}</b></div><p>Position size changes survival even when the trade idea is unchanged.</p></div> }
   if(kind === "classification") return <div className="lesson-sim classify-sim"><MiniMarket tone={x<34?"down":x>66?"up":"range"}/><div><button onClick={()=>setX(20)} className={x<34?"active":""}>Downtrend</button><button onClick={()=>setX(50)} className={x>=34&&x<=66?"active":""}>Range</button><button onClick={()=>setX(80)} className={x>66?"active":""}>Uptrend</button></div><p>Compare swing direction and overlap. This explorer changes the sample; the concept check tests the classification.</p></div>;
+  if(kind === "candle_pattern") return <CandlePatternSim lessonId={lesson.id}/>;
+  if(kind === "chart_pattern") return <ChartPatternSim lessonId={lesson.id}/>;
   if(kind === "horizon") return <HorizonSim/>;
   if(kind === "screener") return <ScreenerSim/>;
   if(kind === "ranking") return <RankingSim/>;
@@ -193,14 +195,15 @@ function labBlurb(lab: string) {
     "Market Replay Lab": "Step through a session one candle at a time, without hindsight.",
     "Stock Selection Lab": "Shortlist three from eighteen and defend each thesis.",
     "Trade Workflow Lab": "Run the full chain from market regime to a sized position.",
+    "Pattern Lab": "Name the shape, place the levels, then see both ways it could resolve.",
   };
   if (blurbs[lab]) return blurbs[lab];
   return lab.includes("Risk") ? "See how sizing changes survival and drawdown." : lab.includes("OI") || lab.includes("Option Chain") ? "Classify positioning without deterministic shortcuts." : lab.includes("Backtest") || lab.includes("Overfitting") ? "Separate attractive history from robust evidence." : "Manipulate the market inputs and test your reasoning.";
 }
 
 function LabsPage({ openLab }: { openLab: (lab: string) => void }) {
-  const categories = [{ title: "Foundations", from: 0, to: 5 }, { title: "Risk & execution", from: 5, to: 10 }, { title: "Derivatives", from: 10, to: 15 }, { title: "Professional research", from: 15, to: 20 }, { title: "Practical trade-craft", from: 20, to: 26 }];
-  const icons = ["╱╲","▤","HH","RSI","%","∿","₹","C/P","Δ","Γ","OI","↕","IV","+","δ","R","ƒ(x)","A/B","!","E","⏱","⛃","⟋","▶","☰","→"];
+  const categories = [{ title: "Foundations", from: 0, to: 5 }, { title: "Risk & execution", from: 5, to: 10 }, { title: "Derivatives", from: 10, to: 15 }, { title: "Professional research", from: 15, to: 20 }, { title: "Practical trade-craft", from: 20, to: 27 }];
+  const icons = ["╱╲","▤","HH","RSI","%","∿","₹","C/P","Δ","Γ","OI","↕","IV","+","δ","R","ƒ(x)","A/B","!","E","⏱","⛃","⟋","▶","☰","→","◫"];
   return <div className="page-shell"><div className="page-title"><div><span className="kicker">{labs.length} INTERACTIVE ENVIRONMENTS</span><h1>Trading <em>Labs</em></h1><p>Change the inputs. Observe the consequences. Build intuition without risking capital.</p></div><div className="synthetic-badge">SYNTHETIC DATA · SAFE PRACTICE</div></div><div className="lab-categories">{categories.map((category,categoryIndex) => <section key={category.title}><div className="category-title"><span>0{categoryIndex+1}</span><h2>{category.title}</h2></div><div className="lab-grid">{labs.slice(category.from, category.to).map((lab,index) => <button key={lab} className="lab-card" onClick={() => openLab(lab)}><div className="lab-visual"><i>{icons[category.from+index]}</i><span>{category.title}</span></div><div><small>LAB {String(category.from+index+1).padStart(2,"0")}</small><h3>{lab}</h3><p>{labBlurb(lab)}</p><span className="open-lab">Open Lab →</span></div></button>)}</div></section>)}</div></div>;
 }
 

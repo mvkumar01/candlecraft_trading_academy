@@ -94,3 +94,16 @@
 .mode-switch button.active{background:var(--lime);border-color:var(--lime);color:var(--ink)}
 @media(max-width:1120px){.mode-control{padding:8px 4px;justify-items:center}.mode-control>b,.mode-control>small{display:none}.mode-switch{grid-template-columns:1fr;width:100%}.mode-switch button{font-size:7px;padding:5px 2px}}
 @media(max-width:820px){.sidebar.open .mode-control{padding:12px 10px;justify-items:stretch}.sidebar.open .mode-control>b,.sidebar.open .mode-control>small{display:block}.sidebar.open .mode-switch{grid-template-columns:1fr 1fr}.sidebar.open .mode-switch button{font-size:9px;padding:6px 4px}}
+
+/* Candlestick and chart pattern interactions (dark .lesson-sim panel). */
+.candle-pattern-sim,.chart-pattern-sim{display:grid;align-content:start;gap:10px}
+.cp-head{display:flex;justify-content:space-between;align-items:baseline;font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:#6e8579}
+.cp-head b{font-size:13px;letter-spacing:0;text-transform:none;color:var(--lime)}
+.cp-swap{justify-self:start;border:1px solid #2b4c3d;background:transparent;color:#8ca399;padding:6px 10px;font-size:9px;font-weight:800;letter-spacing:.05em;text-transform:uppercase}
+.cp-swap:hover{border-color:var(--mint);color:#dbe7df}
+.cp-tabs,.cp-outcomes{display:flex;gap:4px}
+.cp-tabs button,.cp-outcomes button{flex:1;border:1px solid #2b4c3d;background:transparent;color:#8ca399;padding:7px 5px;font-size:9px;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
+.cp-tabs button.active,.cp-outcomes button.active{background:var(--lime);border-color:var(--lime);color:var(--ink)}
+.candle-pattern-sim>p,.chart-pattern-sim>p{margin:0;font-size:12px;line-height:1.6;color:#dbe7df}
+.chart-pattern-sim .cp-note{font-size:10px;color:#6e8579;border-top:1px solid #1b382d;padding-top:8px}
+.pattern-lab .plan-step button{text-transform:capitalize}

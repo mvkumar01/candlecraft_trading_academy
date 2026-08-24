@@ -105,7 +105,7 @@ export function runScreen(active: ScreenFilter[], sector: string) {
 
 // ── Synthetic price series ──────────────────────────────────────────────────
 export type Candle = { o: number; h: number; l: number; c: number; v: number };
-type Segment = { bars: number; drift: number; vol: number; volume: number };
+export type Segment = { bars: number; drift: number; vol: number; volume: number };
 
 /** Small deterministic PRNG so every learner sees the same "market" and reloads are stable. */
 function seeded(seed: number) {
@@ -117,7 +117,7 @@ function seeded(seed: number) {
   };
 }
 
-function buildSeries(seed: number, start: number, segments: Segment[]): Candle[] {
+export function buildSeries(seed: number, start: number, segments: Segment[]): Candle[] {
   const random = seeded(seed);
   const candles: Candle[] = [];
   let last = start;

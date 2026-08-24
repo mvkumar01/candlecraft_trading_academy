@@ -72,7 +72,7 @@ const result = {
 console.log(JSON.stringify(result, null, 2));
 
 const failures: string[] = [];
-if (allLessons.length !== 537) failures.push(`expected 537 lessons, found ${allLessons.length}`);
+if (allLessons.length !== 575) failures.push(`expected 575 lessons, found ${allLessons.length}`);
 if (missingContent.length) failures.push(`${missingContent.length} lessons without authored content: ${missingContent.slice(0, 5).join(", ")}…`);
 // No sentence skeleton may be shared by more than 3 lessons — beyond that it reads as generated.
 for (const entry of templated) if (entry.largestGroup > 3) failures.push(`${entry.field}: ${entry.largestGroup} lessons share one phrasing skeleton (${entry.example.join(", ")})`);
@@ -86,7 +86,7 @@ if (badChoices.length) failures.push(`malformed choices: ${badChoices.join(", ")
 if (danglingPrereqs.length) failures.push(`prerequisites referencing unknown lessons: ${danglingPrereqs.join(", ")}`);
 // Practical labs must be reachable from the module that teaches them. (Three older labs —
 // Position Sizing, Delta, Overfitting — are reachable only from the Labs page; left as found.)
-const practicalLabs = ["Horizon Lab", "Screener Lab", "Swing Setup Lab", "Market Replay Lab", "Stock Selection Lab", "Trade Workflow Lab"];
+const practicalLabs = ["Horizon Lab", "Screener Lab", "Swing Setup Lab", "Market Replay Lab", "Stock Selection Lab", "Trade Workflow Lab", "Pattern Lab"];
 const orphanedPracticalLabs = practicalLabs.filter((lab) => labsWithoutModule.includes(lab));
 if (orphanedPracticalLabs.length) failures.push(`practical labs not attached to a module: ${orphanedPracticalLabs.join(", ")}`);
 if (!allLessons.every((lesson) => lesson.status === "Draft")) failures.push("some lessons are not marked Draft");

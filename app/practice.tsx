@@ -2,58 +2,15 @@
 
 import { useMemo, useState } from "react";
 import {
-  replaySession, runScreen, screenFilters, sectors, swingScenarios, universe,
-  type Candle, type ScreenFilter, type Stock,
+  runScreen, screenFilters, sectors, sessionCheckpoints, swingScenarios, universe,
+  type ScreenFilter, type Stock,
 } from "../lib/market-data";
-import { candlePatternById, chartPatternById, chartPatterns, type ChartPattern } from "../lib/pattern-data";
+import { chartPatternById, chartPatterns, type ChartPattern } from "../lib/pattern-data";
+import { niftyPatternById, niftySession } from "../lib/nifty-data";
+import { PriceChart } from "./chart";
 
 const money = (value: number) => `₹${Math.round(value).toLocaleString("en-IN")}`;
 const sizeFor = (budget: number, entry: number, stop: number) => Math.max(0, Math.floor(budget / Math.max(0.05, entry - stop)));
-
-/** Shared candle renderer. `visible` truncates the series so a replay can hide the future —
- *  the scale is computed from the visible bars only, otherwise the axis leaks the outcome. */
-function CandleChart({ candles, visible, levels = [], height = 190, marker, minSlots = 20, highlightFrom }: {
-  candles: Candle[]; visible?: number; levels?: { price: number; label: string; tone?: "stop" | "entry" | "target" }[]; height?: number; marker?: number;
-  /** Lower this so a three-candle pattern fills the frame instead of hiding in a corner. */
-  minSlots?: number;
-  /** Index from which candles are the pattern itself rather than the context before it. */
-  highlightFrom?: number;
-}) {
-  const shown = candles.slice(0, visible ?? candles.length);
-  if (!shown.length) return null;
-  const prices = [...shown.flatMap((c) => [c.h, c.l]), ...levels.map((l) => l.price)];
-  const top = Math.max(...prices), bottom = Math.min(...prices);
-  const pad = (top - bottom) * 0.08 || 1;
-  const hi = top + pad, lo = bottom - pad;
-  const width = 640;
-  const step = width / Math.max(minSlots, candles.length);
-  const y = (price: number) => ((hi - price) / (hi - lo)) * height;
-  return (
-    <svg className="candle-chart" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" role="img" aria-label="Synthetic price chart">
-      {levels.map((level) => (
-        <g key={level.label}>
-          <line x1={0} x2={width} y1={y(level.price)} y2={y(level.price)} stroke={level.tone === "stop" ? "#ff7466" : level.tone === "target" ? "#43d39c" : "#efb74d"} strokeWidth={1} strokeDasharray="5 4" />
-          <text x={4} y={y(level.price) - 4} fill={level.tone === "stop" ? "#ff7466" : level.tone === "target" ? "#43d39c" : "#efb74d"} fontSize={9}>{level.label}</text>
-        </g>
-      ))}
-      {shown.map((candle, index) => {
-        const x = index * step + step / 2;
-        const up = candle.c >= candle.o;
-        const colour = up ? "#43d39c" : "#ff7466";
-        const bodyTop = y(Math.max(candle.o, candle.c));
-        const bodyHeight = Math.max(1, y(Math.min(candle.o, candle.c)) - bodyTop);
-        return (
-          <g key={index}>
-            {highlightFrom !== undefined && index >= highlightFrom && <rect x={x - step * 0.46} y={0} width={step * 0.92} height={height} fill="#c6f05f" opacity={0.09} />}
-            <line x1={x} x2={x} y1={y(candle.h)} y2={y(candle.l)} stroke={colour} strokeWidth={minSlots < 12 ? 2 : 0.9} />
-            <rect x={x - step * 0.32} y={bodyTop} width={step * 0.64} height={bodyHeight} fill={colour} />
-          </g>
-        );
-      })}
-      {marker !== undefined && <line x1={marker * step} x2={marker * step} y1={0} y2={height} stroke="#6799ff" strokeWidth={1} />}
-    </svg>
-  );
-}
 
 // ── Lesson interactions ─────────────────────────────────────────────────────
 const horizons = [
@@ -129,23 +86,25 @@ export function RankingSim() {
 
 export function ReplaySim() {
   const [bar, setBar] = useState(12);
-  const candles = replaySession.candles;
+  const candles = niftySession.bars;
   const shown = candles.slice(0, bar);
   const high = Math.max(...shown.map((c) => c.h)), low = Math.min(...shown.map((c) => c.l));
   return (
     <div className="lesson-sim replay-sim">
-      <div className="replay-head"><b>{replaySession.symbol} · {replaySession.interval}</b><span>{replaySession.timeAt(bar)}</span></div>
-      <CandleChart candles={candles} visible={bar} height={150} />
+      <div className="replay-head"><b>NIFTY {niftySession.symbol.includes("futures") ? "futures" : ""} · 5 min</b><span>{shown[shown.length - 1].t?.slice(11, 16)}</span></div>
+      <PriceChart bars={candles} visible={bar} height={190} width={430} showVolume
+        label={`NIFTY futures · 5 min · ${niftySession.label}`}
+        ariaLabel="NIFTY intraday session, replayed one candle at a time" />
       <div className="replay-stats">
-        <span>LAST<b>₹{shown[shown.length - 1].c.toFixed(2)}</b></span>
-        <span>SESSION HIGH<b>₹{high.toFixed(2)}</b></span>
-        <span>SESSION LOW<b>₹{low.toFixed(2)}</b></span>
+        <span>LAST<b>{shown[shown.length - 1].c.toFixed(1)}</b></span>
+        <span>SESSION HIGH<b>{high.toFixed(1)}</b></span>
+        <span>SESSION LOW<b>{low.toFixed(1)}</b></span>
       </div>
       <div className="replay-controls">
         <button onClick={() => setBar(Math.max(6, bar - 1))} disabled={bar <= 6}>← Back</button>
         <button onClick={() => setBar(Math.min(candles.length, bar + 1))} disabled={bar >= candles.length}>Next candle →</button>
       </div>
-      <p>The candles after {replaySession.timeAt(bar)} have not been drawn. That is the only honest way to read a session.</p>
+      <p>Real session, real volume. Nothing after {shown[shown.length - 1].t?.slice(11, 16)} has been drawn — that is the only honest way to read a day.</p>
     </div>
   );
 }
@@ -157,7 +116,7 @@ export function SwingSim({ scenarioId }: { scenarioId?: string }) {
   return (
     <div className="lesson-sim swing-sim">
       <div className="swing-head"><b>{scenario.symbol} · daily</b><span>ATR ₹{scenario.atr}</span></div>
-      <CandleChart candles={revealed ? all : scenario.history} visible={revealed ? all.length : scenario.history.length} height={160}
+      <PriceChart bars={revealed ? all : scenario.history} visible={revealed ? all.length : scenario.history.length} height={180} width={430}
         levels={[{ price: scenario.trigger, label: `trigger ${scenario.trigger}`, tone: "entry" }, { price: scenario.invalidation, label: `invalid ${scenario.invalidation}`, tone: "stop" }]} />
       <p className="swing-setup">{scenario.setup}</p>
       {revealed ? <p className="swing-outcome"><b>What happened:</b> {scenario.outcome} <em>{scenario.lesson}</em></p>
@@ -325,7 +284,7 @@ export function SwingSetupLab() {
       </section>
       <section className="lab-output">
         <div className="lab-title-row"><span>{scenario.symbol} · {scenario.name} · daily · synthetic</span><b>ATR ₹{scenario.atr}</b></div>
-        <CandleChart candles={revealed ? [...scenario.history, ...scenario.future] : scenario.history} height={230}
+        <PriceChart bars={revealed ? [...scenario.history, ...scenario.future] : scenario.history} height={230}
           levels={[{ price: scenario.trigger, label: `entry ${scenario.trigger}`, tone: "entry" }, { price: scenario.invalidation, label: `stop ${scenario.invalidation}`, tone: "stop" }]} />
         {!revealed && <button className="button-primary" disabled={!done} onClick={() => setRevealed(true)}>{done ? "Reveal what happened next →" : "Answer all six steps first"}</button>}
         {revealed && (
@@ -345,33 +304,36 @@ export function SwingSetupLab() {
 export function MarketReplayLab() {
   const [bar, setBar] = useState(6);
   const [answered, setAnswered] = useState<Record<number, number>>({});
-  const candles = replaySession.candles;
-  const checkpoint = replaySession.checkpoints.find((item) => item.index === bar - 1);
+  const candles = niftySession.bars;
+  const checkpoint = sessionCheckpoints.find((item) => item.index === bar - 1);
   const shown = candles.slice(0, bar);
+  const last = shown[shown.length - 1];
   const high = Math.max(...shown.map((c) => c.h)), low = Math.min(...shown.map((c) => c.l));
-  const openingHigh = Math.max(...candles.slice(0, 6).map((c) => c.h)), openingLow = Math.min(...candles.slice(0, 6).map((c) => c.l));
   const answeredThis = checkpoint ? answered[checkpoint.index] : undefined;
   const blocked = Boolean(checkpoint) && answeredThis === undefined;
+  const clock = last.t?.slice(11, 16) ?? "";
   return (
     <div className="lab-workbench replay-lab">
       <section className="lab-controls">
-        <h2>{replaySession.name}</h2>
-        <div className="replay-clock"><span>SESSION TIME</span><b>{replaySession.timeAt(bar)}</b><small>{bar} of {candles.length} candles · {replaySession.interval}</small></div>
+        <h2>NIFTY · {niftySession.label}</h2>
+        <div className="replay-clock"><span>SESSION TIME</span><b>{clock}</b><small>{bar} of {candles.length} candles · 5 min</small></div>
         <div className="replay-levels">
-          <span>Previous close<b>₹{replaySession.previousClose.toFixed(2)}</b></span>
-          <span>Opening range<b>₹{openingLow.toFixed(2)} – ₹{openingHigh.toFixed(2)}</b></span>
-          <span>Session high<b>₹{high.toFixed(2)}</b></span>
-          <span>Session low<b>₹{low.toFixed(2)}</b></span>
+          <span>Opening range<b>{niftySession.openingLow.toFixed(0)} – {niftySession.openingHigh.toFixed(0)}</b></span>
+          <span>Session high<b>{high.toFixed(0)}</b></span>
+          <span>Session low<b>{low.toFixed(0)}</b></span>
+          <span>Last<b>{last.c.toFixed(1)}</b></span>
         </div>
         <div className="replay-buttons">
           <button onClick={() => setBar(Math.min(candles.length, bar + 1))} disabled={bar >= candles.length || blocked}>Next candle →</button>
           <button onClick={() => setBar(Math.min(candles.length, bar + 6))} disabled={bar >= candles.length || blocked}>+30 minutes →</button>
         </div>
-        <div className="lab-note"><b>The future is not drawn.</b><p>{blocked ? "Answer the checkpoint before advancing." : "Nothing to the right of the last candle exists yet. Decide before you look."}</p></div>
+        <div className="lab-note"><b>Real session. The future is not drawn.</b><p>{blocked ? "Answer the checkpoint before advancing." : "Nothing to the right of the last candle exists yet. Decide before you look."}</p></div>
       </section>
       <section className="lab-output">
-        <div className="lab-title-row"><span>{replaySession.symbol} · {replaySession.interval} · synthetic session</span><b>₹{shown[shown.length - 1].c.toFixed(2)}</b></div>
-        <CandleChart candles={candles} visible={bar} height={250} levels={[{ price: openingHigh, label: "OR high", tone: "target" }, { price: openingLow, label: "OR low", tone: "stop" }]} />
+        <div className="lab-title-row"><span>NIFTY futures · 5 min · {niftySession.label}</span><b>{last.c.toFixed(1)}</b></div>
+        <PriceChart bars={candles} visible={bar} height={260} showVolume theme="light"
+          levels={[{ price: niftySession.openingHigh, label: "opening range high", tone: "target" }, { price: niftySession.openingLow, label: "opening range low", tone: "stop" }]}
+          ariaLabel="NIFTY intraday session replayed one candle at a time" />
         {checkpoint && (
           <div className="checkpoint-card">
             <span>CHECKPOINT · {checkpoint.time}</span>
@@ -385,7 +347,7 @@ export function MarketReplayLab() {
             {answeredThis !== undefined && <p className="checkpoint-feedback">{checkpoint.feedback}</p>}
           </div>
         )}
-        {bar >= candles.length && <div className="reveal-card"><b>Session complete</b><p>Scroll back through the chart now that the whole day is visible. Every decision you made looks different with the right-hand side of the chart filled in — which is exactly why reviewing charts after the close overstates what you could have seen.</p></div>}
+        {bar >= candles.length && <div className="reveal-card"><b>Session complete</b><p>Now scroll back through the whole day. Every decision you made looks different with the right-hand side of the chart filled in — which is exactly why reviewing charts after the close overstates what you could have seen at the time.</p></div>}
       </section>
     </div>
   );
@@ -505,7 +467,7 @@ export function TradeWorkflowLab() {
     ) },
     { name: "Chart & setup", body: (
       <div className="stage-choice"><p><b>{scenario.symbol}:</b> {scenario.setup}</p>
-        <CandleChart candles={scenario.history} height={180} levels={[{ price: scenario.trigger, label: `trigger ${scenario.trigger}`, tone: "entry" }, { price: scenario.invalidation, label: `invalid ${scenario.invalidation}`, tone: "stop" }]} />
+        <PriceChart bars={scenario.history} height={180} width={560} levels={[{ price: scenario.trigger, label: `trigger ${scenario.trigger}`, tone: "entry" }, { price: scenario.invalidation, label: `invalid ${scenario.invalidation}`, tone: "stop" }]} />
         <b>Setup sentence: &ldquo;Uptrend pulling back to prior structure; I expect the trend to resume above {scenario.trigger}.&rdquo;</b></div>
     ) },
     { name: "Entry & invalidation", body: (
@@ -572,26 +534,52 @@ const chartForLesson: Record<string, string> = {
   "APP-PAT-023": "head-shoulders", "APP-PAT-024": "ascending-triangle",
 };
 
+/** What each shape records and what it cannot — written to match the real instance shown. */
+const candleNotes: Record<string, { reading: string; caution: string }> = {
+  doji: { reading: "The hour travelled in both directions and finished almost exactly where it opened. Neither side kept what it took.",
+    caution: "Indecision describes one hour, not a turning point. Trends contain plenty of them." },
+  hammer: { reading: "After a 239-point slide, the hour fell further, then closed back near its high. The low was reached and rejected.",
+    caution: "It means something only after a decline. The same shape after a rise is a hanging man and reads the other way." },
+  "hanging-man": { reading: "The identical shape, arriving after a rise instead of a fall: selling appeared inside the hour and was absorbed.",
+    caution: "Shape alone cannot separate this from a hammer. Only the move before it can." },
+  "shooting-star": { reading: "After a 294-point advance, the hour pushed higher and gave all of it back, closing near its open.",
+    caution: "Advances make and reject highs on the way up. One rejection is one observation." },
+  "bullish-engulfing": { reading: "The second hour opens below the first hour's close and closes above its open — a full period of decline undone.",
+    caution: "Engulfing compares bodies, not wicks. Large candles are common wherever volatility is rising." },
+  "bearish-engulfing": { reading: "The mirror: the hour opens above the previous close and closes below the previous open, erasing the gain.",
+    caution: "It records what one hour did. Whether those sellers have size left is not visible." },
+  harami: { reading: "A large body followed by a small one contained inside it. The move stopped extending without reversing.",
+    caution: "A pause is not a reversal. Harami reads as momentum fading, not as a reason to trade the other way." },
+  "morning-star": { reading: "A hard fall, a small indecisive hour, then a strong recovery closing back inside the first body.",
+    caution: "Three hours is three periods of evidence, not three times the reliability." },
+  "evening-star": { reading: "A strong advance, a stalling hour at the high, then a decisive fall back into the body of the advance.",
+    caution: "The small middle body is the fragile part — slightly larger and this is not the pattern at all." },
+};
+
 export function CandlePatternSim({ lessonId }: { lessonId: string }) {
   const [primary, alternate] = candleForLesson[lessonId] ?? ["hammer"];
   const [showAlternate, setShowAlternate] = useState(false);
   const [face, setFace] = useState<"records" | "cannot">("records");
-  const pattern = candlePatternById(showAlternate && alternate ? alternate : primary);
+  const pattern = niftyPatternById(showAlternate && alternate ? alternate : primary);
+  const written = candleNotes[pattern.id] ?? candleNotes.hammer;
   return (
     <div className="lesson-sim candle-pattern-sim">
       <div className="cp-head"><b>{pattern.name}</b><span>{pattern.bias}</span></div>
-      <CandleChart candles={pattern.candles} height={150} minSlots={pattern.candles.length + 1}
-        highlightFrom={pattern.candles.length - pattern.patternBars} />
+      <PriceChart bars={pattern.bars} height={215} width={340} minSlots={pattern.bars.length}
+        highlightFrom={pattern.highlightFrom} highlightTo={pattern.highlightFrom + pattern.patternBars}
+        label={`NIFTY · hourly · ${pattern.when}`}
+        ariaLabel={`${pattern.name} on the NIFTY hourly chart, ${pattern.when}`} />
       {alternate && (
         <button className="cp-swap" onClick={() => setShowAlternate(!showAlternate)}>
-          Compare with {candlePatternById(showAlternate ? primary : alternate).name} →
+          Compare with {niftyPatternById(showAlternate ? primary : alternate).name} →
         </button>
       )}
       <div className="cp-tabs">
         <button className={face === "records" ? "active" : ""} onClick={() => setFace("records")}>What it records</button>
         <button className={face === "cannot" ? "active" : ""} onClick={() => setFace("cannot")}>What it cannot</button>
       </div>
-      <p>{face === "records" ? pattern.reading : pattern.caution}</p>
+      <p>{face === "records" ? written.reading : written.caution}</p>
+      <p className="cp-note">Real NIFTY data. The shaded bars are the pattern; the bars before it are the move it followed.</p>
     </div>
   );
 }
@@ -604,7 +592,8 @@ export function ChartPatternSim({ lessonId }: { lessonId: string }) {
   return (
     <div className="lesson-sim chart-pattern-sim">
       <div className="cp-head"><b>{pattern.name}</b><span>{pattern.kind}</span></div>
-      <CandleChart candles={candles} height={155}
+      <PriceChart bars={candles} height={200} width={400} label={`${pattern.name} · illustrative`}
+        ariaLabel={`${pattern.name}, ${pattern.kind} pattern`}
         levels={[{ price: pattern.trigger, label: `trigger ${pattern.trigger}`, tone: "entry" }, { price: pattern.invalidation, label: `invalid ${pattern.invalidation}`, tone: "stop" }]} />
       <div className="cp-outcomes">
         {(["forming", "worked", "failed"] as const).map((option) => (
@@ -671,8 +660,8 @@ export function PatternLab() {
       </section>
       <section className="lab-output">
         <div className="lab-title-row"><span>PATTERN {(index % chartPatterns.length) + 1} OF {chartPatterns.length} · daily · synthetic</span><b>{answered ? pattern.name : "Unnamed"}</b></div>
-        <CandleChart height={240}
-          candles={outcome === null ? pattern.history : [...pattern.history, ...(outcome === "worked" ? pattern.worked : pattern.failed)]}
+        <PriceChart height={240}
+          bars={outcome === null ? pattern.history : [...pattern.history, ...(outcome === "worked" ? pattern.worked : pattern.failed)]}
           levels={answered ? [{ price: pattern.trigger, label: `trigger ${pattern.trigger}`, tone: "entry" }, { price: pattern.invalidation, label: `invalid ${pattern.invalidation}`, tone: "stop" }] : []} />
         {!answered && <p className="inspect-prompt">Answer both questions before the levels are drawn. Reading the shape first is the point.</p>}
         {outcome !== null && (

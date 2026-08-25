@@ -139,40 +139,39 @@ export function buildSeries(seed: number, start: number, segments: Segment[]): C
   return candles;
 }
 
-// ── Intraday replay session ─────────────────────────────────────────────────
+// ── Intraday replay checkpoints ─────────────────────────────────────────────
 export type ReplayCheckpoint = { index: number; time: string; question: string; choices: string[]; correct: number; feedback: string };
 
-/** One synthetic session in Deccan Motors, 5-minute candles, 9:15 to 15:30.
- *  Shaped deliberately: gap open, an opening range, a failed breakdown, a trend leg,
- *  a long midday range, a pullback, a late push, then a fade into the close. */
-export const replaySession = {
-  symbol: "DECMOT",
-  name: "Deccan Motors",
-  interval: "5 min",
-  previousClose: 640.0,
-  candles: buildSeries(20260814, 646, [
-    { bars: 6, drift: 0.15, vol: 1.5, volume: 82000 },
-    { bars: 6, drift: -0.55, vol: 1.6, volume: 71000 },
-    { bars: 13, drift: 0.95, vol: 1.4, volume: 96000 },
-    { bars: 16, drift: 0.05, vol: 1.1, volume: 43000 },
-    { bars: 12, drift: -0.42, vol: 1.2, volume: 52000 },
-    { bars: 14, drift: 0.88, vol: 1.3, volume: 88000 },
-    { bars: 8, drift: -0.30, vol: 1.0, volume: 61000 },
-  ]),
-  /** Bar index → clock time. 9:15 open, 5 minutes per bar. */
-  timeAt(index: number) {
-    const minutes = 9 * 60 + 15 + index * 5;
-    return `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
-  },
-  checkpoints: [
-    { index: 5, time: "09:45", question: "Thirty minutes in. What do you actually know?", choices: ["The trend for the day is up", "An opening range has formed and nothing has resolved yet", "A breakout is about to happen", "The gap will be filled"], correct: 1, feedback: "The first half hour builds a range. Its high and low become the levels the rest of the session references — but the range itself is not a signal." },
-    { index: 11, time: "10:15", question: "Price has pushed below the opening range and come back. What is the honest reading?", choices: ["A confirmed downtrend", "The breakdown was not accepted — a failed move, which often runs the other way", "Nothing happened", "Time to short the low"], correct: 1, feedback: "A move out of the range that gets rejected leaves traders positioned the wrong way. That does not guarantee a reversal, but it changes who is under pressure." },
-    { index: 24, time: "11:20", question: "Price is well above the opening range on rising volume. What kind of day is this behaving like?", choices: ["A range day", "A trend day, so pullbacks are more likely to be bought than faded", "A reversal day", "An expiry day"], correct: 1, feedback: "Trend days spend the session away from the open and give shallow pullbacks. Naming the day type early changes whether you fade moves or join them." },
-    { index: 40, time: "12:40", question: "Two hours of overlapping candles in a narrow band. What has changed?", choices: ["The trend has reversed", "Participation has dropped — the midday session is behaving like a range", "A breakout is guaranteed after lunch", "The stop should be moved to break-even automatically"], correct: 1, feedback: "Midday is usually the quietest stretch of the session. Trend tactics applied to a midday range is one of the most reliable ways to bleed money." },
-    { index: 52, time: "13:40", question: "Price has pulled back toward the middle of the day's range. Where does a continuation trade become wrong?", choices: ["When RSI drops below 30", "Below the pullback low — if that goes, the pullback was not a pullback", "At the previous day's close", "It cannot become wrong on a trend day"], correct: 1, feedback: "The pullback low is the level the whole thesis rests on. Placing the invalidation there is what makes the trade sizeable." },
-    { index: 66, time: "14:50", question: "New highs late in the session. What does the clock add to the decision?", choices: ["Nothing — the setup is the setup", "Less time remains for the move to work, and intraday positions must be closed", "Late moves are always the strongest", "Volatility falls after 14:30"], correct: 1, feedback: "An intraday position has a hard deadline. A setup that needs two hours to work is a different trade at 14:50 than it was at 10:50." },
-  ] as ReplayCheckpoint[],
-};
+/** Checkpoints for the real NIFTY session in `nifty-data.ts` (8 July 2026, 5-minute bars).
+ *  `index` is the bar the question fires on, so each one asks about what is actually on
+ *  screen at that moment and nothing after it. The session genuinely ran: opening range,
+ *  a long quiet midday, then a breakdown on roughly fifteen times the midday volume. */
+export const sessionCheckpoints: ReplayCheckpoint[] = [
+  { index: 5, time: "09:45", question: "Thirty minutes in. What do you actually know?",
+    choices: ["The trend for the day is down", "An opening range has formed and nothing has resolved", "A breakout is about to happen", "The gap will be filled"],
+    correct: 1,
+    feedback: "The first half hour built a range between roughly 24,235 and 24,320 on the heaviest volume of the morning. Those two numbers are what the rest of the day gets measured against — the range itself is not a signal." },
+  { index: 23, time: "11:15", question: "Price has drifted back to the top of the opening range on falling volume. What does the volume add?",
+    choices: ["It confirms a breakout is coming", "Fewer participants are involved than during the open, so the move up carries less weight", "It means the range will break down", "Volume is irrelevant intraday"],
+    correct: 1,
+    feedback: "Volume has fallen from around 265,000 at the open to under 25,000. Price reaching the top of the range on a fraction of the participation is a weaker test than the same level on heavy volume." },
+  { index: 41, time: "12:50", question: "Two hours of overlapping candles in a narrow band. What kind of day is this behaving like so far?",
+    choices: ["A trend day", "A range day — and midday is where ranges are most common", "A reversal day", "An expiry day"],
+    correct: 1,
+    feedback: "Midday is reliably the quietest stretch of the session. Applying trend tactics to a midday range is one of the most dependable ways to bleed money." },
+  { index: 53, time: "13:40", question: "Price is near the bottom of the day's range. Would you short the break, and where would you be wrong?",
+    choices: ["Yes, with a stop above the day's high", "Yes, with a stop above the recent swing high near 24,272", "No — nothing has broken yet", "Yes, with no stop"],
+    correct: 2,
+    feedback: "Nothing has broken at this point. The honest answer is that there is no trade yet — the level is being approached, not cleared. Deciding in advance where you would be wrong is the useful half of the question." },
+  { index: 56, time: "13:55", question: "The range has broken and volume has jumped to roughly fifteen times the midday level. What changed?",
+    choices: ["Nothing — volume is noise", "Participation returned at the moment the level gave way, which is what a real break looks like", "The day is now guaranteed to close lower", "The move must reverse"],
+    correct: 1,
+    feedback: "This is the distinction the volume lessons make: a level giving way on a fraction of normal participation is a poke, and one that draws in fifteen times the recent volume is a different event. It still does not guarantee the close." },
+  { index: 65, time: "14:40", question: "Price has fallen roughly 400 points from the range and it is 14:40. What does the clock add?",
+    choices: ["Nothing — the setup is the setup", "Less time remains for anything new to work, and intraday positions must be flat by the close", "Late moves are always strongest", "Volatility falls after 14:30"],
+    correct: 1,
+    feedback: "An intraday position has a hard deadline. A fresh entry at 14:40 has under an hour to work, which makes it a different trade from the identical setup at 10:40." },
+];
 
 // ── Swing scenarios ─────────────────────────────────────────────────────────
 export type SwingScenario = {

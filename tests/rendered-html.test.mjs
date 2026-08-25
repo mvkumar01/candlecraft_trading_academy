@@ -88,6 +88,31 @@ test("the practical modules are wired end to end", async () => {
   }
 });
 
+test("charts render as candles from real NIFTY data", async () => {
+  const [chart, page, practice, nifty] = await Promise.all([
+    readFile(new URL("../app/chart.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/practice.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../lib/nifty-data.ts", import.meta.url), "utf8"),
+  ]);
+  // The bar-height renderer is gone from markup and styles alike.
+  assert.doesNotMatch(page, /MiniMarket/, "MiniMarket must not come back");
+  assert.doesNotMatch(practice, /MiniMarket/);
+  const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
+  assert.doesNotMatch(css, /mini-market/, "dead .mini-market rules must not linger");
+  // Candles must not be stretched out of shape by the viewBox.
+  assert.doesNotMatch(chart, /<svg[^>]*preserveAspectRatio="none"/, "the svg must keep its aspect ratio");
+  // A chart without numbers cannot be reasoned about.
+  assert.match(chart, /niceStep/, "price gridlines must be computed");
+  assert.match(chart, /fmtTime/, "time or date labels must be rendered");
+  // The data is real NIFTY, and says so.
+  assert.match(nifty, /Real NIFTY market data, not synthetic/);
+  assert.match(nifty, /export const niftyPatterns/);
+  assert.match(nifty, /export const niftyStructure/);
+  assert.match(nifty, /export const niftySession/);
+  assert.match(practice, /NIFTY · hourly/, "candlestick lessons must cite the real instance");
+});
+
 test("practical company data is fictional and labelled", async () => {
   const [data, practice] = await Promise.all([
     readFile(new URL("../lib/market-data.ts", import.meta.url), "utf8"),

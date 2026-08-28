@@ -186,3 +186,28 @@ test("Financial Markets order-book scenarios reset and stay isolated", async () 
   assert.match(visual, /best ask ₹100\.10; latest execution is/);
   assert.doesNotMatch(visual, /250 shares filled|100\.16/);
 });
+
+test("How Trading Works is accurate, interactive and position-balanced", async () => {
+  const [foundations, visual, page] = await Promise.all([
+    readFile(new URL("../lib/content/foundations.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/trading-works.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+  ]);
+  const moduleText = foundations.split("// ── How Trading Works")[1].split("// ── Orders and Execution")[0];
+  const ids = [...moduleText.matchAll(/"(FND-WORK-\d{3})":/g)].map(match => match[1]);
+  assert.deepEqual(ids, Array.from({ length: 15 }, (_, index) => `FND-WORK-${String(index + 1).padStart(3, "0")}`));
+  for (const phrase of ["T+1 rolling cycle", "optional T+0", "directly to the client's demat account", "naked short selling is prohibited", "actual average − expected", "expected − actual average"])
+    assert.match(moduleText, new RegExp(phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i"));
+  assert.doesNotMatch(moduleText, /fee on every trade/i);
+  assert.doesNotMatch(moduleText, /your broker will close them for you/i);
+  const positions = [...moduleText.matchAll(/correct: (\d),/g)].map(match => Number(match[1]));
+  assert.equal(positions.length, 15);
+  assert.equal(new Set(positions).size, 4, "all four answer positions should be used");
+  assert.ok(Math.max(...[0,1,2,3].map(position => positions.filter(value => value === position).length)) <= 4, "no answer position should dominate");
+  assert.match(page, /TradingWorksVisual key=\{lesson\.id\}/);
+  for (const concept of ["SELL INTO BIDS", "SPREAD LAB", "LIQUIDITY COMPARISON", "EXPECTED VS ACTUAL", "T+1 · PAY-IN / PAYOUT", "SHORT STOCK", "COST STACK"])
+    assert.ok(visual.includes(concept), `${concept} visual is missing`);
+  assert.match(visual, /aria-label=\{label\}/);
+  assert.match(page, /₹0\.70 of buy-side slippage versus the best ask/);
+  assert.doesNotMatch(page, /₹1\.70 of slippage versus the best bid/);
+});

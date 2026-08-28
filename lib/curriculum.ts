@@ -28,7 +28,7 @@ export type InteractionKind =
   | "terms" | "steps" | "sides" | "index" | "order_book" | "candle" | "rsi" | "contracts"
   | "delta" | "expectancy" | "overfitting" | "payoff" | "pnl" | "risk" | "classification" | "scenario"
   | "horizon" | "screener" | "ranking" | "replay" | "swing" | "workflow"
-  | "candle_pattern" | "chart_pattern";
+  | "candle_pattern" | "chart_pattern" | "market_foundations";
 
 /** Authored lesson content. Every lesson has its own; nothing here is generated from a template.
  *  `plain` is deliberately the first thing a learner reads: the simplest true sentence about

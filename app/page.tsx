@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { PRODUCT_NAME, allLessons, badges, course, labs, masteryTopics, supportedBlockTypes, type CourseLevel, type Lesson } from "../lib/curriculum";
 import { CandlePatternSim, ChartPatternSim, HorizonSim, RankingSim, ReplaySim, ScreenerSim, SwingSim, WorkflowSim, practicalLabs } from "./practice";
+import { MarketFoundationsVisual } from "./market-foundations";
 import { PriceChart } from "./chart";
 import { niftyStructure } from "../lib/nifty-data";
 
@@ -126,6 +127,7 @@ function LessonInteractive({ lesson }: { lesson: Lesson }) {
   if(kind === "classification") { const tone = x<34?"down":x>66?"up":"range" as const; const sample = sampleFor(tone); return <div className="lesson-sim classify-sim"><PriceChart bars={sample.bars} height={200} width={430} label={`NIFTY · daily · ${sample.when}`} ariaLabel={`NIFTY daily chart, ${sample.id}`}/><div><button onClick={()=>setX(20)} className={x<34?"active":""}>Downtrend</button><button onClick={()=>setX(50)} className={x>=34&&x<=66?"active":""}>Range</button><button onClick={()=>setX(80)} className={x>66?"active":""}>Uptrend</button></div><p>Three real NIFTY windows. Compare the swing highs and lows in each — the labels came from that structure, not from the eye.</p></div> }
   if(kind === "candle_pattern") return <CandlePatternSim lessonId={lesson.id}/>;
   if(kind === "chart_pattern") return <ChartPatternSim lessonId={lesson.id}/>;
+  if(kind === "market_foundations") return <MarketFoundationsVisual lessonId={lesson.id}/>;
   if(kind === "horizon") return <HorizonSim/>;
   if(kind === "screener") return <ScreenerSim/>;
   if(kind === "ranking") return <RankingSim/>;
@@ -180,7 +182,7 @@ function LessonPage({ lesson, state, setState, openLesson, back }: { lesson: Les
         {/* The lesson opens on the plainest true sentence about this concept — no hook, no framing. */}
         {block.type === "text" && <div className="hook-card"><span>IN PLAIN WORDS</span><h2>{block.body}</h2><p>{lesson.module} · {lesson.level}</p></div>}
         {block.type === "visual" && <div className="concept-screen"><div className="concept-copy"><span>A CLOSER LOOK</span><h2>{lesson.title}</h2><p>{lesson.material.detail}</p><div><b>For example</b><span>{lesson.material.example}</span></div></div><LessonInteractive lesson={lesson}/></div>}
-        {block.type === "matching" && <div className="concept-screen"><div className="concept-copy"><span>SIDE BY SIDE</span><h2>{sides ? `${sides.left} vs ${sides.right}` : lesson.title}</h2><p>{lesson.material.detail}</p><div><b>For example</b><span>{lesson.material.example}</span></div></div>{lesson.material.interaction === "sides" ? <SidesTable lesson={lesson}/> : <><SidesTable lesson={lesson}/><LessonInteractive lesson={lesson}/></>}</div>}
+        {block.type === "matching" && <div className="concept-screen"><div className="concept-copy"><span>SIDE BY SIDE</span><h2>{sides ? `${sides.left} vs ${sides.right}` : lesson.title}</h2><p>{lesson.material.detail}</p><div><b>For example</b><span>{lesson.material.example}</span></div></div>{lesson.material.interaction === "sides" ? <SidesTable lesson={lesson}/> : lesson.material.interaction === "market_foundations" ? <LessonInteractive lesson={lesson}/> : <><SidesTable lesson={lesson}/><LessonInteractive lesson={lesson}/></>}</div>}
         {block.type === "simulation" && <div className="concept-screen"><div className="concept-copy"><span>BUILD IT YOURSELF</span><h2>{lesson.title}</h2><p>{lesson.material.detail}</p></div><LessonInteractive lesson={lesson}/></div>}
         {block.type === "calculation" && <div className="concept-screen"><div className="concept-copy"><span>WORK THE NUMBER</span><h2>{lesson.title}</h2><p>{lesson.material.detail}</p><div><b>Worked example</b><span>{lesson.material.example}</span></div></div><LessonInteractive lesson={lesson}/></div>}
         {block.type === "sequence" && <div className="concept-screen"><div className="concept-copy"><span>PUT IT IN ORDER</span><h2>{lesson.title}</h2><p>{lesson.material.detail}</p></div>{lesson.material.interaction === "steps" ? <StepsList lesson={lesson}/> : <><StepsList lesson={lesson}/><LessonInteractive lesson={lesson}/></>}</div>}

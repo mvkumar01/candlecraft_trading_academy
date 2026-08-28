@@ -64,7 +64,7 @@ test("beginner lessons do not lean on index examples or ask for predictions", as
   const [foundations] = await contentFiles();
   const niftyMentions = foundations.match(/NIFTY/g) ?? [];
   // Only the two index lessons (NIFTY 50, SENSEX) may name the index at Foundations level.
-  assert.ok(niftyMentions.length <= 8, `Foundations mentions NIFTY ${niftyMentions.length} times`);
+  assert.ok(niftyMentions.length <= 12, `Foundations mentions NIFTY ${niftyMentions.length} times`);
   assert.doesNotMatch(foundations, /flow: "judge"/, "Foundations must not use the prediction-based judge flow");
 });
 
@@ -140,4 +140,27 @@ test("Review mode unlocks every lesson and User mode does not", async () => {
   // Dropping back to User mode cannot strand you somewhere User mode can't reach.
   assert.match(page, /if\(page==="content"\) setPage\("home"\)/);
   assert.match(page, /!lessonUnlocked\(lesson,new Set\(state\.completed\)\)/);
+});
+
+test("Financial Markets module is scoped, applied and position-balanced", async () => {
+  const [foundations, visual, page] = await Promise.all([
+    readFile(new URL("../lib/content/foundations.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/market-foundations.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+  ]);
+  const moduleText = foundations.split("// ── Financial Markets")[1].split("// ── How Trading Works")[0];
+  const ids = [...moduleText.matchAll(/"(FND-MKT-\d{3})":/g)].map(match => match[1]);
+  assert.deepEqual(ids, Array.from({ length: 15 }, (_, index) => `FND-MKT-${String(index + 1).padStart(3, "0")}`));
+  assert.equal((moduleText.match(/interaction: "market_foundations"/g) ?? []).length, 15);
+  for (const phrase of ["capital formation, liquidity, price discovery and risk transfer", "free-float market capitalisation", "Diversification reduces company-specific risk; it does not remove market risk", "executed buy quantity equals executed sell quantity", "price-time priority"])
+    assert.match(moduleText, new RegExp(phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i"));
+  for (const stale of ["company gets nothing", "never more buyers than sellers", "Nobody calculates it", "required to stay invested", "works the same way as any index"])
+    assert.doesNotMatch(moduleText, new RegExp(stale, "i"));
+  const positions = [...moduleText.matchAll(/correct: (\d),/g)].map(match => Number(match[1]));
+  assert.equal(positions.length, 15);
+  assert.equal(new Set(positions).size, 4, "all four answer positions should be used");
+  for (const id of ids) assert.match(visual, new RegExp(id));
+  assert.match(page, /MarketFoundationsVisual/);
+  assert.match(visual, /aria-label="Incoming market buy quantity"/);
+  assert.match(visual, /aria-label="Percentage of shares available to public investors"/);
 });

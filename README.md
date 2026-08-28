@@ -1,8 +1,9 @@
-# vinext-starter
+# Candlecraft Trading Academy
 
-A clean full-stack starter running on
-[vinext](https://github.com/cloudflare/vinext), with optional Cloudflare D1 and
-Drizzle support.
+An interactive trading education application built with the Next.js App Router.
+The same source supports the existing OpenAI Sites deployment through
+[Vinext](https://github.com/cloudflare/vinext) and a native Next.js deployment
+on Vercel.
 
 ## Prerequisites
 
@@ -14,6 +15,29 @@ Drizzle support.
 npm install
 npm run dev
 npm run build
+```
+
+## Deployment targets
+
+### OpenAI Sites
+
+The existing Sites pipeline remains the project default:
+
+```bash
+npm run build
+```
+
+The Sites project identity and optional bindings remain in
+`.openai/hosting.json`.
+
+### Vercel
+
+Import the GitHub repository and select the **Next.js** framework preset.
+`vercel.json` supplies the native Vercel build command, so no output-directory
+override is required.
+
+```bash
+npm run build:vercel
 ```
 
 This starter does not use `wrangler.jsonc`.
@@ -91,7 +115,9 @@ actions tied to the current ChatGPT user. Leave public content anonymous.
 
 - `npm run dev`: start local development
 - `npm run build`: verify the vinext build output
-- `npm test`: build the starter and verify its rendered loading skeleton
+- `npm run build:vercel`: verify the native Next.js/Vercel build
+- `npm run dev:vercel`: start the native Next.js development server
+- `npm test`: build the site and run rendered-content checks
 - `npm run db:generate`: generate Drizzle migrations after schema changes
 
 ## Learn More

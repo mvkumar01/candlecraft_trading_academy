@@ -125,10 +125,16 @@
 @media(max-width:620px){.mf-flow,.mf-chain{grid-template-columns:1fr}.mf-flow button:not(:last-child):after{content:"↓";right:10px;top:auto;bottom:-12px}.mf-function-grid{grid-template-columns:1fr}.mf-slider{grid-template-columns:1fr}.mf-route{grid-template-columns:1fr}.mf-route i{transform:rotate(90deg)}.mf-asset-panel{grid-template-columns:1fr}.mf-book{grid-template-columns:1fr}.mf-book label,.mf-book>p,.mf-book-result{grid-column:1!important}.mf-book label{grid-template-columns:1fr}.mf-index label{grid-template-columns:1fr 55px}.mf-index label span{grid-column:1/3}}
 
 /* Static diagram and concept cards should not pretend to be controls. */
-.mf-flow>div{position:relative;border:1px solid #2b4c3d;background:#102b20;color:#a7b9b0;text-align:left;padding:10px}
+.mf-sim{overflow:hidden}
+.mf-flow>div,.mf-function-grid>div{min-width:0;border:1px solid #2b4c3d;background:#102b20;color:#a7b9b0;text-align:left;padding:10px}
+.mf-flow>div{position:relative;display:grid;align-content:start;gap:4px}
 .mf-flow>div:not(:last-child):after{content:"→";position:absolute;right:-10px;top:50%;z-index:2;color:var(--lime)}
-.mf-function-grid>div{border:1px solid #2b4c3d;background:#102b20;color:#a7b9b0;text-align:left;padding:10px}
-.mf-function-grid>div b,.mf-function-grid>div span{display:block}
-.mf-function-grid>div b{font-size:10px;color:#fff}
-.mf-function-grid>div span{font-size:10px;line-height:1.45;margin-top:4px;color:#b3c5ba}
-@media(max-width:620px){.mf-flow>div:not(:last-child):after{content:"↓";right:10px;top:auto;bottom:-12px}}
+.mf-flow>div b,.mf-flow>div span,.mf-function-grid>div b,.mf-function-grid>div span{display:block;min-width:0;overflow-wrap:anywhere}
+.mf-flow>div b,.mf-function-grid>div b{font-size:10px;line-height:1.25;color:#fff}
+.mf-flow>div span,.mf-function-grid>div span{font-size:9px;line-height:1.4;color:#b3c5ba}
+.mf-function-grid>div span{margin-top:4px}
+.mf-asset-panel{grid-template-columns:repeat(3,minmax(0,1fr));overflow:hidden}
+.mf-asset-panel>div{min-width:0}
+.mf-asset-panel b{display:block;font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;font-size:8px;line-height:1.35;letter-spacing:.2px}
+.mf-asset-panel span{display:block;overflow-wrap:anywhere}
+@media(max-width:620px){.mf-flow>div:not(:last-child):after{content:"↓";right:10px;top:auto;bottom:-12px}.mf-asset-panel{grid-template-columns:1fr}}

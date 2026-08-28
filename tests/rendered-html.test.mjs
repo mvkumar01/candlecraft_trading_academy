@@ -143,10 +143,11 @@ test("Review mode unlocks every lesson and User mode does not", async () => {
 });
 
 test("Financial Markets module is scoped, applied and position-balanced", async () => {
-  const [foundations, visual, page] = await Promise.all([
+  const [foundations, visual, page, css] = await Promise.all([
     readFile(new URL("../lib/content/foundations.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/market-foundations.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
   ]);
   const moduleText = foundations.split("// ── Financial Markets")[1].split("// ── How Trading Works")[0];
   const ids = [...moduleText.matchAll(/"(FND-MKT-\d{3})":/g)].map(match => match[1]);
@@ -167,6 +168,9 @@ test("Financial Markets module is scoped, applied and position-balanced", async 
   assert.doesNotMatch(visual, /mf-chip/, "static chips must not look like interactive controls");
   assert.match(visual, /aria-label="Incoming market buy quantity"/);
   assert.match(visual, /aria-label="Percentage of shares available to public investors"/);
+  assert.match(css, /\.mf-flow>div b[^}]*font-size:10px/, "ecosystem headings need an explicit compact size");
+  assert.match(css, /\.mf-flow>div span[^}]*font-size:9px/, "ecosystem descriptions need an explicit readable size");
+  assert.match(css, /\.mf-asset-panel b\{[^}]*font-size:8px/, "asset labels must not fall back to browser-default text size");
 });
 
 test("Financial Markets order-book scenarios reset and stay isolated", async () => {

@@ -161,6 +161,24 @@ test("Financial Markets module is scoped, applied and position-balanced", async 
   assert.equal(new Set(positions).size, 4, "all four answer positions should be used");
   for (const id of ids) assert.match(visual, new RegExp(id));
   assert.match(page, /MarketFoundationsVisual/);
+  for (const asset of ["Shares", "Bonds", "Currencies", "Commodities", "Derivatives"]) assert.match(visual, new RegExp(`label: "${asset}"`));
+  assert.match(visual, /role="tablist" aria-label="Financial asset types"/);
+  assert.match(visual, /role="tabpanel"/);
+  assert.doesNotMatch(visual, /mf-chip/, "static chips must not look like interactive controls");
   assert.match(visual, /aria-label="Incoming market buy quantity"/);
   assert.match(visual, /aria-label="Percentage of shares available to public investors"/);
+});
+
+test("Financial Markets order-book scenarios reset and stay isolated", async () => {
+  const [visual, page] = await Promise.all([
+    readFile(new URL("../app/market-foundations.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+  ]);
+  // A lesson-keyed visual remount gives every lesson an independent state container.
+  assert.match(page, /MarketFoundationsVisual key=\{lesson\.id\}/);
+  assert.match(visual, /const discovery=lessonId === "FND-MKT-012"/);
+  assert.match(visual, /const maxQuantity=discovery\?100:120/);
+  assert.match(visual, /const asks=\[\[100\.10,100\],\[100\.20,300\],\[100\.30,200\]\]/);
+  assert.match(visual, /best ask ₹100\.10; latest execution is/);
+  assert.doesNotMatch(visual, /250 shares filled|100\.16/);
 });

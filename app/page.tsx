@@ -127,7 +127,7 @@ function LessonInteractive({ lesson }: { lesson: Lesson }) {
   if(kind === "classification") { const tone = x<34?"down":x>66?"up":"range" as const; const sample = sampleFor(tone); return <div className="lesson-sim classify-sim"><PriceChart bars={sample.bars} height={200} width={430} label={`NIFTY · daily · ${sample.when}`} ariaLabel={`NIFTY daily chart, ${sample.id}`}/><div><button onClick={()=>setX(20)} className={x<34?"active":""}>Downtrend</button><button onClick={()=>setX(50)} className={x>=34&&x<=66?"active":""}>Range</button><button onClick={()=>setX(80)} className={x>66?"active":""}>Uptrend</button></div><p>Three real NIFTY windows. Compare the swing highs and lows in each — the labels came from that structure, not from the eye.</p></div> }
   if(kind === "candle_pattern") return <CandlePatternSim lessonId={lesson.id}/>;
   if(kind === "chart_pattern") return <ChartPatternSim lessonId={lesson.id}/>;
-  if(kind === "market_foundations") return <MarketFoundationsVisual lessonId={lesson.id}/>;
+  if(kind === "market_foundations") return <MarketFoundationsVisual key={lesson.id} lessonId={lesson.id}/>;
   if(kind === "horizon") return <HorizonSim/>;
   if(kind === "screener") return <ScreenerSim/>;
   if(kind === "ranking") return <RankingSim/>;

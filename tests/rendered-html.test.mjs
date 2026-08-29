@@ -231,3 +231,16 @@ test("remaining Foundations modules use lesson-aware visual guides", async () =>
   assert.doesNotMatch(horizons, /Every round trip costs the same/);
   assert.doesNotMatch(horizons, /Getting out will move the price against you/);
 });
+
+test("Applied Trading uses lesson-aware workbenches and current dated contract examples", async () => {
+  const [page, visuals, content] = await Promise.all([
+    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/applied-visuals.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../lib/content/applied.ts", import.meta.url), "utf8"),
+  ]);
+  for (const moduleCode of ["PA","MTF","MOM","MR","DER","FUT","OPT","GRK","OI","STR","PSN"]) assert.match(page, new RegExp(`"${moduleCode}"`));
+  for (const tool of ["MultiTimeframeVisual","FuturesVisual","OptionPayoffVisual","GreeksVisual","OpenInterestVisual","StrategyBuilderVisual","MarketBehaviourVisual","DerivativeAnatomyVisual","PositionalVisual"]) assert.match(visuals, new RegExp(`function ${tool}`));
+  assert.match(content, /last Tuesday/);
+  assert.match(content, /lot size 65/);
+  assert.doesNotMatch(content, /last Thursday|lot size 75|75 units/);
+});

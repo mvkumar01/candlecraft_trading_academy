@@ -211,3 +211,23 @@ test("How Trading Works is accurate, interactive and position-balanced", async (
   assert.match(page, /₹0\.70 of buy-side slippage versus the best ask/);
   assert.doesNotMatch(page, /₹1\.70 of slippage versus the best bid/);
 });
+
+test("remaining Foundations modules use lesson-aware visual guides", async () => {
+  const [page, visual, foundations, horizons] = await Promise.all([
+    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/foundation-visuals.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../lib/content/foundations.ts", import.meta.url), "utf8"),
+    readFile(new URL("../lib/content/horizons.ts", import.meta.url), "utf8"),
+  ]);
+  assert.match(page, /FoundationVisual key=\{lesson\.id\}/);
+  for (const moduleCode of ["ORD", "CHART", "HZN", "STRUCT", "VOL", "IND", "RISK"])
+    assert.match(visual, new RegExp(`moduleCode===\\"${moduleCode}\\"`));
+  for (const guide of ["ORDER WORKBENCH", "SAME MARKET · DIFFERENT BUCKET", "HORIZON PLANNER", "STRUCTURE MAP", "PRICE · VOLUME · RANGE", "DERIVED, NOT PREDICTIVE", "RISK DECISION LAB"])
+    assert.ok(visual.includes(guide), `${guide} is missing`);
+  assert.match(visual, /Volume counts shares or contracts traded—not the number of people/);
+  assert.match(visual, /A winning streak does not make a losing run “due.”/);
+  assert.doesNotMatch(foundations, /Streaks are guaranteed by probability/);
+  assert.doesNotMatch(foundations, /variance is due to arrive/);
+  assert.doesNotMatch(horizons, /Every round trip costs the same/);
+  assert.doesNotMatch(horizons, /Getting out will move the price against you/);
+});

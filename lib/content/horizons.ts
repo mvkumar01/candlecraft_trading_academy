@@ -116,8 +116,8 @@ export const horizonsContent: Record<string, Authored> = {
   },
   "FND-HZN-008": {
     plain: "Short horizons pay more in costs; long horizons carry more exposure to events.",
-    detail: "Every round trip costs the same whether you held for an hour or a year, so trading often multiplies a fixed cost against smaller moves. Holding longer avoids that, and instead exposes you to results announcements, policy decisions and overnight news you cannot trade around.",
-    example: "Twenty intraday trades a month at ₹85 each is ₹1,700 of cost. One positional trade held three months costs ₹85 — and sits through two sets of quarterly results.",
+    detail: "Each round trip carries brokerage where applicable, statutory or exchange charges, spread and possible slippage. The exact amount varies by broker, product and trade value, but trading frequently repeats these costs against smaller intended moves. Holding longer trades less often and instead adds exposure to results, policy decisions and overnight news.",
+    example: "If an illustrative round trip averages ₹85, twenty intraday round trips cost ₹1,700. One positional round trip repeats the cost only once, but may sit through scheduled results and unexpected news.",
     interaction: "horizon",
     flow: "compare",
     sides: {
@@ -166,7 +166,7 @@ export const horizonsContent: Record<string, Authored> = {
   },
   "FND-PICK-002": {
     plain: "Before anything else, check that enough shares trade each day for you to get out.",
-    detail: "If a share trades 2 lakh shares a day and you need to sell 20,000, you are a tenth of the day's volume. Getting out will move the price against you — and this happens exactly when everyone else wants out too. Liquidity is the first filter because failing it makes every other quality irrelevant.",
+    detail: "If a share trades 2 lakh shares a day and you need to sell 20,000, your order is a tenth of typical daily volume. Average volume alone cannot predict the fill, but that concentration warns that depth, spread, order slicing and stressed liquidity need closer inspection. Liquidity comes first because a good idea still fails if it cannot be exited reasonably.",
     example: "Two stocks look equally attractive. One trades 34 lakh shares a day, the other 2 lakh. Only one of them can be exited quickly at a fair price.",
     interaction: "screener",
     flow: "cause",

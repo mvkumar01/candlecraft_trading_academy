@@ -244,3 +244,19 @@ test("Applied Trading uses lesson-aware workbenches and current dated contract e
   assert.match(content, /lot size 65/);
   assert.doesNotMatch(content, /last Thursday|lot size 75|75 units/);
 });
+
+test("Professional Trading uses module-specific research and portfolio workbenches", async () => {
+  const [page, visuals, content] = await Promise.all([
+    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/professional-visuals.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../lib/content/professional.ts", import.meta.url), "utf8"),
+  ]);
+  assert.match(page, /lesson\.levelCode === "PRO"/);
+  for (const moduleCode of ["AOI","POS","VOL","OSE","HEDGE","REG","SSCR","SYS","BT","EVAL","RISK","PORT"]) assert.match(visuals, new RegExp(`"${moduleCode}"`));
+  for (const tool of ["Positioning","Volatility","PayoffEngineer","HedgeBook","RegimeLab","ScreeningLab","SystemLab","BacktestLab","EvaluationLab","PortfolioRisk"]) assert.match(visuals, new RegExp(`function ${tool}`));
+  for (const volatilitySlice of ["smile","skew","term"]) assert.match(visuals, new RegExp(`"${volatilitySlice}"`));
+  for (const payoff of ["bull","bear","condor","butterfly","straddle","calendar"]) assert.match(visuals, new RegExp(`"${payoff}"`));
+  assert.match(content, /example lot of 65/);
+  assert.match(content, /aggregate Gamma sign/);
+  assert.doesNotMatch(content, /lot of 75|Sharpe assumes well-behaved|runs of eight losses regularly|hedging around concentrated positioning is stabilising on average/);
+});

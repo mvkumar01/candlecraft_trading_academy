@@ -9,20 +9,23 @@ function Frame({ eyebrow, title, children, note }: { eyebrow: string; title: str
   return <div className="lesson-sim app-sim"><div className="app-head"><div><small>{eyebrow}</small><h3>{title}</h3></div><span>CHANGE THE INPUTS</span></div>{children}<p className="app-note">{note}</p></div>;
 }
 
+function AppBars({ tone, count }: { tone: string; count: number }) {
+  return <div className={`app-bars ${tone}`}>{Array.from({length:count},(_,i)=><i key={i} style={{height:`${28 + ((i*17 + (tone === "up" ? i*7 : tone === "down" ? (count-i)*7 : i%3*12))%62)}%`}}/>)}</div>;
+}
+
 function MultiTimeframeVisual() {
   const [weekly, setWeekly] = useState<"up"|"range"|"down">("up");
   const [daily, setDaily] = useState<"up"|"range"|"down">("down");
   const aligned = weekly === daily && weekly !== "range";
   const decision = aligned ? (weekly === "up" ? "Trend environment supports long setups" : "Trend environment supports short setups") : weekly === "range" ? "No directional advantage from the higher timeframe" : "Conflict: wait, reduce size, or skip";
-  const Bars = ({ tone, count }: { tone: string; count: number }) => <div className={`app-bars ${tone}`}>{Array.from({length:count},(_,i)=><i key={i} style={{height:`${28 + ((i*17 + (tone === "up" ? i*7 : tone === "down" ? (count-i)*7 : i%3*12))%62)}%`}}/>)}</div>;
   return <Frame eyebrow="TWO CHARTS · TWO JOBS" title="Resolve timeframe agreement" note="The higher timeframe defines the environment. The lower timeframe times the entry; it does not overrule the environment.">
-    <div className="mtf-grid"><section><b>WEEKLY · ENVIRONMENT</b><Bars tone={weekly} count={12}/><div className="app-tabs">{(["up","range","down"] as const).map(v=><button key={v} className={weekly===v?"active":""} onClick={()=>setWeekly(v)}>{v}</button>)}</div></section><section><b>DAILY · EXECUTION</b><Bars tone={daily} count={18}/><div className="app-tabs">{(["up","range","down"] as const).map(v=><button key={v} className={daily===v?"active":""} onClick={()=>setDaily(v)}>{v}</button>)}</div></section></div>
+    <div className="mtf-grid"><section><b>WEEKLY · ENVIRONMENT</b><AppBars tone={weekly} count={12}/><div className="app-tabs">{(["up","range","down"] as const).map(v=><button key={v} className={weekly===v?"active":""} onClick={()=>setWeekly(v)}>{v}</button>)}</div></section><section><b>DAILY · EXECUTION</b><AppBars tone={daily} count={18}/><div className="app-tabs">{(["up","range","down"] as const).map(v=><button key={v} className={daily===v?"active":""} onClick={()=>setDaily(v)}>{v}</button>)}</div></section></div>
     <div className={`app-verdict ${aligned?"good":"warn"}`}><span>{aligned?"ALIGNED":"NOT ALIGNED"}</span><b>{decision}</b></div>
   </Frame>;
 }
 
 function FuturesVisual({ lessonId }: { lessonId: string }) {
-  const [entry,setEntry]=useState(25000), [d1,setD1]=useState(24920), [d2,setD2]=useState(25040), [d3,setD3]=useState(24880);
+  const entry=25000, [d1,setD1]=useState(24920), [d2,setD2]=useState(25040), [d3,setD3]=useState(24880);
   const lot=65, margin=125000, closes=[entry,d1,d2,d3];
   const rows=closes.slice(1).map((close,i)=>({day:i+1,close,points:close-closes[i],cash:(close-closes[i])*lot}));
   const total=(d3-entry)*lot, balance=margin+total;

@@ -37,12 +37,12 @@ function Book({ side, quantity }: { side: "buy" | "sell"; quantity: number }) {
 
 export function TradingWorksVisual({ lessonId }: { lessonId: string }) {
   const lesson = Number(lessonId.slice(-3));
-  const [quantity, setQuantity] = useState(50);
+  const [quantity, setQuantity] = useState(lesson === 14 ? 100 : 50);
   const [step, setStep] = useState(0);
   const [mode, setMode] = useState<"intraday" | "delivery">("intraday");
   const [price, setPrice] = useState(250);
   const [exit, setExit] = useState(253);
-  const [costs, setCosts] = useState(110);
+  const [costs, setCosts] = useState(lesson === 14 ? 40 : 110);
   const [trades, setTrades] = useState(20);
   const [bid, setBid] = useState(99.9);
   const [ask, setAsk] = useState(100.1);
@@ -88,7 +88,7 @@ export function TradingWorksVisual({ lessonId }: { lessonId: string }) {
   if (lesson >= 12 && lesson <= 14) {
     const isShort = lesson === 13; const current = lesson === 14 ? exit : price;
     const qty = quantity; const gross = (isShort ? 250 - current : current - 250) * qty; const net = gross - (lesson === 14 ? costs : 0);
-    return <div className="lesson-sim work-sim"><div className="work-action-head"><div><small>{lesson === 12 ? "LONG STOCK" : lesson === 13 ? "SHORT STOCK" : "GROSS TO NET"}</small><h3>{isShort ? "Sell first, then buy back" : "Entry ₹250 per share"}</h3></div><Metric label={lesson === 14 ? "NET P&L" : "UNREALISED P&L"} value={`${net >= 0 ? "+" : "−"}₹${Math.abs(net).toFixed(0)}`} tone={net < 0 ? "warn" : "good"}/></div><Range label="Quantity" value={qty} min={50} max={500} step={50} setValue={setQuantity}/><Range label={lesson === 14 ? "Exit price" : "Current price"} value={current} min={220} max={280} setValue={lesson === 14 ? setExit : setPrice} suffix=""/>{lesson === 14 && <Range label="Total transaction costs" value={costs} min={0} max={300} step={10} setValue={setCosts} suffix=""/>}<div className="work-equation"><span>{isShort ? "(₹250 − current)" : "(current − ₹250)"}</span><b>× {qty}</b>{lesson === 14 && <b>− ₹{costs}</b>}<b>= {net >= 0 ? "+" : "−"}₹{Math.abs(net).toFixed(0)}</b></div>{isShort && <p className="work-note">In India, naked short selling is prohibited. Delivery obligations still apply, and borrowing through SLB is the formal route for delivery-based short positions.</p>}</div>;
+    return <div className="lesson-sim work-sim"><div className="work-action-head"><div><small>{lesson === 12 ? "LONG STOCK" : lesson === 13 ? "SHORT STOCK" : "GROSS TO NET"}</small><h3>{isShort ? "Sell first, then buy back" : "Entry ₹250 per share"}</h3></div><Metric label={lesson === 14 ? "NET P&L" : "UNREALISED P&L"} value={`${net >= 0 ? "+" : "−"}₹${Math.abs(net).toFixed(0)}`} tone={net < 0 ? "warn" : "good"}/></div><Range label="Quantity" value={qty} min={50} max={500} step={50} setValue={setQuantity}/><Range label={lesson === 14 ? "Exit price" : "Current price"} value={current} min={220} max={280} setValue={lesson === 14 ? setExit : setPrice} suffix=""/>{lesson === 14 && <Range label="Brokerage, taxes and fees" value={costs} min={0} max={300} step={10} setValue={setCosts} suffix=""/>}<div className="work-equation"><span>{isShort ? "(₹250 − current)" : "(current − ₹250)"}</span><b>× {qty}</b>{lesson === 14 && <b>− ₹{costs}</b>}<b>= {net >= 0 ? "+" : "−"}₹{Math.abs(net).toFixed(0)}</b></div>{isShort && <p className="work-note">In India, naked short selling is prohibited. Delivery obligations still apply, and borrowing through SLB is the formal route for delivery-based short positions.</p>}</div>;
   }
 
   const total = 85 * trades;

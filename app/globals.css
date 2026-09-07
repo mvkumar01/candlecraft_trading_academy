@@ -274,3 +274,12 @@
   .lesson-actions{gap:8px}
   .lesson-actions>button:first-child{font-size:12px}
 }
+/* Foundation practice plots retain real price geometry and wrap controls on small screens. */
+.fv-price-plot { display: block; width: 100%; height: auto; min-width: 0; color: #c8d5ce; margin-block: 16px; }
+.fv-sim .fv-tabs { flex-wrap: wrap; }
+.fv-sim .fv-tabs button { min-height: 44px; white-space: normal; }
+.fv-sim .fv-process button[aria-pressed="true"] { border-color: #c8ef68; background: #254335; }
+.fv-sim .fv-metrics, .fv-sim .fv-risk-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 155px), 1fr)); }
+.fv-sim .fv-stat { min-width: 0; overflow-wrap: anywhere; }
+.fv-price-plot text { font-size: 18px; }
+@media (max-width: 767px) { .fv-price-plot text { font-size: 28px; } }

@@ -6,10 +6,10 @@ const Chip = ({ children }: { children: ReactNode }) => <span className="mf-badg
 
 const assetTypes = [
   { label: "Shares", exchange: "An ownership interest in a company.", example: "Asha buys 10 listed shares of Infosys through NSE.", differs: "A share represents ownership; the other products below represent lending, exchange, physical goods or a contract." },
-  { label: "Bonds", exchange: "A debt instrument through which an issuer borrows money.", example: "An investor buys an RBI or company bond and receives interest under its terms.", differs: "A bond is a lending claim with repayment terms, not an ownership interest in the issuer." },
+  { label: "Bonds", exchange: "A debt instrument through which an issuer borrows money.", example: "An investor buys a government bond and receives interest under its terms.", differs: "A bond is a lending claim with repayment terms, not an ownership interest in the issuer." },
   { label: "Currencies", exchange: "One currency exchanged for another.", example: "An importer converts rupees into US dollars to pay a supplier.", differs: "A currency trade exchanges money units; it does not give you ownership of a company." },
-  { label: "Commodities", exchange: "Assets such as gold, crude oil or agricultural products.", example: "A jeweller hedges gold prices while a farmer manages crop-price risk.", differs: "A commodity is a physical or raw-material exposure, not a claim on company ownership." },
-  { label: "Derivatives", exchange: "A contract whose value depends on an underlying asset, rate or measure.", example: "A trader uses a NIFTY futures contract to take index-price exposure.", differs: "A derivative is a contract linked to something else; it is not a company share itself." },
+  { label: "Commodities", exchange: "Assets such as gold, crude oil or agricultural products.", example: "A jeweller buys gold to make necklaces; gold is the commodity being exchanged.", differs: "A commodity is a physical or raw-material exposure, not a claim on company ownership." },
+  { label: "Derivatives", exchange: "A contract whose value depends on an underlying asset, rate or measure.", example: "A flour mill agrees a price today for a future wheat purchase using a futures contract.", differs: "A derivative is a contract linked to something else; it is not a company share itself." },
 ] as const;
 
 const choices = {

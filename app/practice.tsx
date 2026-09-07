@@ -539,7 +539,7 @@ const candleNotes: Record<string, { reading: string; caution: string }> = {
   doji: { reading: "The hour travelled in both directions and finished almost exactly where it opened. Neither side kept what it took.",
     caution: "Indecision describes one hour, not a turning point. Trends contain plenty of them." },
   hammer: { reading: "After a 239-point slide, the hour fell further, then closed back near its high. The low was reached and rejected.",
-    caution: "It means something only after a decline. The same shape after a rise is a hanging man and reads the other way." },
+    caution: "After a rise, this shape is called a hanging man. Context changes the interpretation, but neither name promises a reversal." },
   "hanging-man": { reading: "The identical shape, arriving after a rise instead of a fall: selling appeared inside the hour and was absorbed.",
     caution: "Shape alone cannot separate this from a hammer. Only the move before it can." },
   "shooting-star": { reading: "After a 294-point advance, the hour pushed higher and gave all of it back, closing near its open.",

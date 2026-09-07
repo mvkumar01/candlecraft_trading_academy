@@ -153,7 +153,7 @@ test("Financial Markets module is scoped, applied and position-balanced", async 
   const ids = [...moduleText.matchAll(/"(FND-MKT-\d{3})":/g)].map(match => match[1]);
   assert.deepEqual(ids, Array.from({ length: 15 }, (_, index) => `FND-MKT-${String(index + 1).padStart(3, "0")}`));
   assert.equal((moduleText.match(/interaction: "market_foundations"/g) ?? []).length, 15);
-  for (const phrase of ["capital formation, liquidity, price discovery and risk transfer", "free-float market capitalisation", "Diversification reduces company-specific risk; it does not remove market risk", "executed buy quantity equals executed sell quantity", "price-time priority"])
+  for (const phrase of ["this raises capital", "that is liquidity", "agree prices", "manage risks", "free-float market capitalisation", "Diversification reduces company-specific risk; it does not remove market risk", "executed buy quantity equals executed sell quantity", "price-time priority"])
     assert.match(moduleText, new RegExp(phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i"));
   for (const stale of ["company gets nothing", "never more buyers than sellers", "Nobody calculates it", "required to stay invested", "works the same way as any index"])
     assert.doesNotMatch(moduleText, new RegExp(stale, "i"));
@@ -220,12 +220,16 @@ test("remaining Foundations modules use lesson-aware visual guides", async () =>
     readFile(new URL("../lib/content/horizons.ts", import.meta.url), "utf8"),
   ]);
   assert.match(page, /FoundationVisual key=\{lesson\.id\}/);
-  for (const moduleCode of ["ORD", "CHART", "HZN", "STRUCT", "VOL", "IND", "RISK"])
+  for (const moduleCode of ["ORD", "CHART", "HZN", "STRUCT", "VOL", "IND", "RISK", "PICK"])
     assert.match(visual, new RegExp(`moduleCode===\\"${moduleCode}\\"`));
-  for (const guide of ["ORDER WORKBENCH", "SAME MARKET · DIFFERENT BUCKET", "HORIZON PLANNER", "STRUCTURE MAP", "PRICE · VOLUME · RANGE", "DERIVED, NOT PREDICTIVE", "RISK DECISION LAB"])
+  for (const guide of ["PRACTICE ORDER BOOK", "THE SAME ONE-HOUR WINDOW", "HORIZON PLANNER", "PRACTICE SWINGS", "EQUAL-LENGTH PERIODS", "RSI INPUT LAB", "RISK ARITHMETIC", "THREE PRACTICE CANDIDATES"])
     assert.ok(visual.includes(guide), `${guide} is missing`);
-  assert.match(visual, /Volume counts shares or contracts traded—not the number of people/);
-  assert.match(visual, /A winning streak does not make a losing run “due.”/);
+  assert.match(visual, /These bars count shares, not people/);
+  assert.match(visual, /keep size tied to the plan/);
+  assert.match(visual, /do not subtract it twice/);
+  assert.match(visual, /aria-pressed=\{checked.includes\(index\)\}/);
+  assert.match(visual, /aggregateBars\(practiceBars/);
+  assert.match(visual, /trueRange\(108,104,previous\)/);
   assert.doesNotMatch(foundations, /Streaks are guaranteed by probability/);
   assert.doesNotMatch(foundations, /variance is due to arrive/);
   assert.doesNotMatch(horizons, /Every round trip costs the same/);

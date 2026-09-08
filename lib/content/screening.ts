@@ -91,7 +91,7 @@ export const screeningContent: Record<string, Authored> = {
   "APP-SCR-006": {
     plain: "A liquidity filter keeps only the shares that trade enough for you to enter and leave.",
     detail: "The right threshold depends on your position size, not on a universal number. A useful rule of thumb is that your full position should be a small fraction of a normal day's volume — otherwise your own order is the largest thing happening in that stock.",
-    example: "A ₹5,00,000 position in a ₹300 stock is about 1,700 shares. Against 2 lakh shares a day that is fine; against 20,000 a day it is a problem you created.",
+    example: "A ₹5,00,000 order in a ₹300 share is about 1,667 shares. That is 0.83% of 2 lakh average daily volume, or 8.33% of 20,000. Neither figure guarantees a fill: inspect spreads, depth and time of day.",
     interaction: "screener",
     flow: "calculate",
     question: "What decides the right liquidity threshold?",
@@ -269,7 +269,7 @@ export const screeningContent: Record<string, Authored> = {
   "APP-SCR-019": {
     plain: "A false positive is a stock that passes every filter and is still a bad trade.",
     detail: "They are guaranteed, because filters see numbers and not situations. A stock can be liquid, trending, above its averages and expanding on volume — and be one day from results, or extended after a 30% run, or the only strong name in a collapsing sector.",
-    example: "Aravali Pharma passes every technical filter cleanly. It is also at a 52-week high with RSI 68 after a 22-point run — you would be buying the end of a move.",
+    example: "A candidate passes the technical screen after a 22% rise, but its nearest defensible stop is too far away for this trade plan. That is a selection problem—not proof the rise has ended.",
     interaction: "screener",
     flow: "judge",
     question: "Why are false positives unavoidable in screening?",
@@ -295,7 +295,7 @@ export const screeningContent: Record<string, Authored> = {
 
   // ── Systematic Screening (Professional) ─────────────────────────────────────
   "PRO-SSCR-001": {
-    plain: "Systematic screening replaces yes-or-no filters with a score that ranks every name in the universe.",
+    plain: "Systematic selection can combine eligibility filters with rankings; ranking orders the candidates that remain.",
     detail: "A filter throws away a stock that misses a threshold by one basis point. A ranking keeps it and places it 47th. That difference matters because thresholds are arbitrary, and a ranked list degrades gracefully where a filtered list falls off a cliff.",
     example: "A filter of 'RSI above 50' rejects a stock at 49.8. A ranking on the same measure places it just behind the one at 50.2, which is what the data actually says.",
     interaction: "ranking",
@@ -317,7 +317,7 @@ export const screeningContent: Record<string, Authored> = {
     takeaway: "Ranking removes the threshold cliff and gives a list of predictable length.",
   },
   "PRO-SSCR-002": {
-    plain: "The universe is the fixed list of instruments your screen is allowed to consider.",
+    plain: "The universe is the instrument set defined by your rules at each date; membership can change over time.",
     detail: "Defining it explicitly matters more than it sounds. An undefined universe silently changes as listings, liquidity and index membership change, so results from different periods stop being comparable — and a universe defined by today's membership imports hindsight into every historical test.",
     example: "'Top 500 by market cap, reviewed quarterly, using the membership in force at each date' is a universe. 'Whatever my platform shows' is not.",
     interaction: "ranking",
@@ -423,7 +423,7 @@ export const screeningContent: Record<string, Authored> = {
   "PRO-SSCR-010": {
     plain: "Capacity is the largest amount of money a screen's output can actually absorb.",
     detail: "A screen that favours small, thin names may test beautifully and be untradeable at size, because your own orders would move the prices the test assumed. Capacity should be estimated from the shortlist's typical daily turnover, and it caps the strategy regardless of how good the signal is.",
-    example: "A shortlist averaging 3 lakh shares a day at ₹200 turns over about ₹6 crore. A fund taking 5% of daily volume can deploy ₹30 lakh per name — no more.",
+    example: "A share trading 3 lakh shares/day at ₹200 has ₹6 crore of daily turnover. A hypothetical 5% participation cap permits ₹30 lakh of one-day orders—not a guaranteed fill or a universal portfolio capacity.",
     interaction: "ranking",
     flow: "calculate",
     question: "A screen tests well but favours thin small-caps. What is the practical constraint?",

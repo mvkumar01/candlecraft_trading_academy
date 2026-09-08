@@ -24,7 +24,8 @@ function loadSource(filename) {
     if (!found) throw new Error(`Cannot resolve ${specifier} from ${filename}`);
     return loadSource(found);
   };
-  const compiled = ts.transpileModule(readFileSync(filename, "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true } });
+  const source = readFileSync(filename, "utf8").replace("function LessonInteractive(", "export function LessonInteractive(");
+  const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true } });
   new Function("require", "module", "exports", compiled.outputText)(requireSource, loadedModule, loadedModule.exports);
   return loadedModule.exports;
 }
@@ -34,6 +35,22 @@ const { FoundationVisual } = loadSource(resolve(root, "app/foundation-visuals.ts
 const { MarketFoundationsVisual } = loadSource(resolve(root, "app/market-foundations.tsx"));
 const { TradingWorksVisual } = loadSource(resolve(root, "app/trading-works.tsx"));
 const { CandlePatternSim } = loadSource(resolve(root, "app/practice.tsx"));
+const { LessonInteractive } = loadSource(resolve(root, "app/page.tsx"));
+
+test("all 437 advanced lessons render through the actual lesson dispatcher", () => {
+  const lessons = allLessons.filter(l=>l.levelCode!=="FND");
+  assert.equal(lessons.length,437);
+  for(const lesson of lessons){
+    const html=renderToStaticMarkup(React.createElement(LessonInteractive,{lesson}));
+    assert.ok(html.length>300,lesson.id);
+    assert.doesNotMatch(html,/NaN|undefined|Infinity/,lesson.id);
+    if(lesson.levelCode==="PRO")assert.match(html,/pro-sim/,`${lesson.id}: must not route to Foundations`);
+    for(const input of html.matchAll(/<input\b[^>]*type="range"[^>]*>/g)){
+      const attr=name=>Number(input[0].match(new RegExp(`${name}="([^"]+)"`))?.[1]);
+      assert.ok(attr("value")>=attr("min")&&attr("value")<=attr("max"),`${lesson.id}: range bounds`);
+    }
+  }
+});
 
 test("all 138 Level 1 lesson visual initial states render with valid controls", () => {
   const lessons = allLessons.filter(lesson => lesson.levelCode === "FND");

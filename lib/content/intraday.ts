@@ -40,7 +40,7 @@ export const intradayContent: Record<string, Authored> = {
     takeaway: "A tighter stop buys a larger position. That is why intraday execution quality matters more.",
   },
   "APP-DAY-003": {
-    plain: "The first thirty minutes of a session are the most volatile and the least informative.",
+    plain: "The open often has rapid price discovery and wide swings; whether to trade it depends on your tested method.",
     detail: "Orders accumulated overnight execute at the open, so volume and range are at their largest while the day's direction is genuinely undecided. Many intraday methods simply refuse to trade before 9:45 — not because the open is unprofitable, but because it is the hardest part of the day to read.",
     example: "Deccan Motors gaps to ₹646 from ₹640 and covers a ₹6 range in the first six candles, resolving nothing.",
     interaction: "replay",
@@ -120,7 +120,7 @@ export const intradayContent: Record<string, Authored> = {
   "APP-DAY-009": {
     plain: "VWAP is the average price of the session weighted by how much traded at each price.",
     detail: "It approximates the average price participants actually paid today, which is why large orders are often measured against it. Traders use it as a reference for whether buyers or sellers have the better position so far — and like every average, it is computed from the past and lags what is happening now.",
-    example: "Price at ₹662 with VWAP at ₹653 means the average participant today paid ₹653; anyone who bought at the average is ahead.",
+    example: "Price is ₹662 and session VWAP is ₹653. The volume-weighted average transaction price is ₹653; this does not reveal each participant’s cost or whether they still hold a position.",
     interaction: "replay",
     flow: "define",
     question: "What does VWAP actually measure?",
@@ -157,7 +157,7 @@ export const intradayContent: Record<string, Authored> = {
     takeaway: "Intraday momentum expires fast. The invalidation has to be close and enforced.",
   },
   "APP-DAY-012": {
-    plain: "Intraday volume tells you how many participants were involved in a given move.",
+    plain: "Intraday volume counts shares or contracts traded during an interval, not the number of distinct participants.",
     detail: "It follows a reliable shape: heavy at the open, thin through the middle of the day, heavy again into the close. Judging a move's volume means comparing it with the same time on previous days, not with the session's own average — otherwise every midday move looks weak and every opening move looks strong.",
     example: "A push at 12:30 on 40,000 shares looks feeble against the session average, and is heavy for 12:30.",
     interaction: "replay",
@@ -256,7 +256,7 @@ export const intradayContent: Record<string, Authored> = {
   "APP-DAY-019": {
     plain: "Index instruments are traded intraday because they are deeply liquid and move on broad news rather than single-company events.",
     detail: "A NIFTY position cannot be blindsided by one company's announcement, and the depth means large size fills without moving the price. The trade-off is that index moves are smaller in percentage terms and driven by macro flow that gives very little advance warning.",
-    example: "A single company's disappointing results can move that stock 8% and the index 0.2%. The index removes company-specific risk and dilutes company-specific opportunity.",
+    example: "A company’s results can move its shares much more than the index. An index instrument diversifies some company-specific exposure but does not remove it; liquidity also varies by instrument, strike and expiry.",
     interaction: "replay",
     flow: "compare",
     sides: {
@@ -304,7 +304,7 @@ export const intradayContent: Record<string, Authored> = {
   "APP-DAY-022": {
     plain: "Intraday targets are set at the next visible level, because that is where the move is likely to meet supply.",
     detail: "The candidates are the opening-range extremes, yesterday's high and low, VWAP, and the session's own extremes. Setting a target as a fixed rupee amount ignores where the orders actually are, and often places it just beyond a level the move was never going to clear.",
-    example: "Entry ₹659 with yesterday's high at ₹665.40. A target at ₹665 fills ahead of the level; a target at ₹667 requires the move to clear it first.",
+    example: "Entry ₹659, previous high ₹665.40. A target at ₹665 seeks to exit before that level; a target at ₹667 requires price to pass it. Neither limit order is guaranteed to fill.",
     interaction: "replay",
     flow: "judge",
     question: "Why set the target just below the next level rather than beyond it?",
@@ -369,7 +369,7 @@ export const intradayContent: Record<string, Authored> = {
   "APP-DAY-027": {
     plain: "The revenge-trading spiral is a loss, an urge to recover it immediately, a larger position, and a worse loss.",
     detail: "Intraday it runs faster than anywhere else, because the next opportunity is five minutes away rather than next week. The defences are structural, not motivational: a hard loss limit, a mandatory pause after a losing trade, and a size that cannot be changed mid-session.",
-    example: "Down ₹4,000 at 10:40, doubles size at 10:45, down ₹15,000 by 11:20 — twenty minutes of decisions the plan never contained.",
+    example: "Down ₹4,000 at 10:40, the trader doubles size at 10:45 and is down ₹15,000 by 11:20—forty minutes of decisions outside the plan.",
     interaction: "risk",
     flow: "sequence",
     steps: [
@@ -412,7 +412,7 @@ export const intradayContent: Record<string, Authored> = {
     takeaway: "Write the stopping rules before the session. In-session judgement is exactly what they replace.",
   },
   "APP-DAY-030": {
-    plain: "An intraday loss limit caps what a single session can cost you.",
+    plain: "An intraday loss limit defines when to stop new risk and manage open positions; gaps and execution can carry losses beyond it.",
     detail: "It is more urgent intraday than on any other horizon, because the number of decisions available in one day is enormous. A limit of 1–2% of capital, enforced by closing the platform, converts a potentially unbounded day into a known, survivable one.",
     example: "₹5,00,000 capital with a 2% daily limit is ₹10,000. At ₹2,500 of risk per trade, four losses end the session.",
     interaction: "risk",
@@ -425,22 +425,22 @@ export const intradayContent: Record<string, Authored> = {
     takeaway: "A daily limit converts an unbounded session into a known number of permitted losses.",
   },
   "APP-DAY-031": {
-    plain: "Intraday leverage is dangerous because it multiplies a position that is already large by design.",
-    detail: "The intraday position is big because the stop is small — that is the arithmetic working correctly. Adding leverage on top multiplies an already-large exposure, so the account survives only while every stop is honoured perfectly. One ignored stop at that size can end it.",
-    example: "₹5.9 lakh of exposure from ₹2,500 of risk is already 118× the risk budget. A leveraged version of the same trade turns one ignored stop into a capital event.",
+    plain: "Leverage increases market exposure relative to account equity, so small price moves can cause large account losses.",
+    detail: "Sizing from a tight stop can produce large notional exposure. Check that amount against account equity and available buying power; an execution delay or gap can exceed the planned stop risk even without additional borrowing.",
+    example: "₹5.9 lakh of exposure in a ₹5 lakh account is 1.18× gross leverage. It is also 236× a ₹2,500 planned stop-risk budget, but that second ratio is not account leverage. An ignored stop can exceed the planned risk.",
     interaction: "risk",
     flow: "judge",
-    question: "Why is leverage particularly dangerous intraday rather than merely amplifying?",
-    choices: ["Intraday markets are less liquid", "The position is already large because the stop is small, so leverage multiplies an amplified exposure", "Leverage costs more intraday", "Stops cannot be used with leverage"],
+    question: "₹5.9 lakh exposure against ₹5 lakh equity represents what gross leverage?",
+    choices: ["236×","1.18×","118×","0.5×"],
     correct: 1,
-    correctFeedback: "Correct. Leverage compounds an exposure that the tight stop already made large.",
-    incorrectFeedback: "The tight stop has already produced a large position. Leverage multiplies that, not a small base.",
-    takeaway: "The tight intraday stop already creates a large position. Leverage stacks on top of that.",
+    correctFeedback: "Correct: 5.9 ÷ 5 = 1.18. The stop-risk budget is not the equity denominator.",
+    incorrectFeedback: "Gross leverage compares notional exposure with equity, not with the planned loss at a stop.",
+    takeaway: "Measure leverage against equity and planned trade risk against the stop; they answer different questions.",
   },
   "APP-DAY-032": {
     plain: "Reading a session honestly means deciding without seeing the next candle.",
     detail: "Every chart you review after the close is obvious, because the outcome is printed on it. The only way to test whether you can actually read a session is to step through it one candle at a time and commit to a call before the next one appears — which is what the replay does.",
-    example: "At 11:20 the session looks like a trend day and the trade is clear. Two hours later it has been a range for four hours, and the 11:20 decision looks quite different.",
+    example: "At 11:20 the session looks like a trend day. By 13:20 price has repeatedly returned to the opening range. Judge the 11:20 decision using what was visible then, not the later chart.",
     interaction: "replay",
     flow: "plan",
     question: "Why does reviewing charts after the close overstate your ability?",

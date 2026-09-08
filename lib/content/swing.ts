@@ -5,7 +5,7 @@ import type { Authored } from "../curriculum.ts";
  *  risk is controlled. None of these are presented as signals that pay. */
 export const swingContent: Record<string, Authored> = {
   "APP-SWG-001": {
-    plain: "Swing trading means buying a stock and holding it for a few days to a few weeks to capture one move.",
+    plain: "Swing trading aims to capture a price move over days or weeks; this module uses long cash-equity examples.",
     detail: "You are not trying to catch every wiggle, and you are not betting on the business. You are betting that one identifiable move — a breakout, a pullback ending, a bounce from a level — continues far enough to pay for the risk you took.",
     example: "Buy Kaveri Tech at ₹1,595 as it clears a six-week ceiling, stop at ₹1,540, hold nine sessions, exit at ₹1,720.",
     interaction: "swing",
@@ -53,7 +53,7 @@ export const swingContent: Record<string, Authored> = {
     takeaway: "Swing accepts gaps to avoid the deadline. Intraday accepts the deadline to avoid gaps.",
   },
   "APP-SWG-004": {
-    plain: "A swing trader exits on a price level; an investor exits on a change in the business.",
+    plain: "Swing trading usually follows a shorter price-based plan; investing typically evaluates a longer-term thesis. Both need exit rules.",
     detail: "This matters most when a swing trade goes wrong. The temptation is to say 'it is a good company, I will hold' — which silently converts a two-week trade with a ₹55 stop into an investment with no stop at all, at a size chosen for the trade.",
     example: "A swing position stops out at ₹1,540. Deciding to hold instead because the company is sound leaves you with a position sized for a ₹55 risk and no exit rule.",
     interaction: "swing",
@@ -107,7 +107,7 @@ export const swingContent: Record<string, Authored> = {
   "APP-SWG-008": {
     plain: "A support or resistance setup trades a bounce from an area where price has previously turned.",
     detail: "It tries to capture the reaction at a level where buyers or sellers have shown up before. It makes sense when the level has been tested a small number of times and the broader trend agrees. It fails as levels get tested repeatedly — each test consumes the orders that made the level work.",
-    example: "A stock has bounced from ₹296 twice. The third test is a weaker proposition than the first, because much of the buying interest that created the level has already been used.",
+    example: "A stock has bounced from ₹296 twice and returns a third time. The earlier reactions identify a level to watch, not a count of remaining buyers. Check the current response and define failure.",
     interaction: "swing",
     flow: "cause",
     question: "Why does a level tend to get weaker with each test?",
@@ -204,7 +204,7 @@ export const swingContent: Record<string, Authored> = {
   "APP-SWG-015": {
     plain: "ATR tells you how far the stock normally travels in a day, which is what a swing stop must clear.",
     detail: "A stop inside one ATR will be hit by an ordinary session. Swing stops are commonly placed at 1.5 to 3 ATR from entry, or at the structural level if that is further. The multiple is a choice; the principle is that the stop must sit outside routine movement.",
-    example: "Kaveri Tech's ATR is ₹31. A ₹20 stop is inside one ordinary day. A ₹55 stop at the base low is about 1.8 ATR — outside the noise and anchored to structure.",
+    example: "ATR is ₹31. A ₹20 stop is smaller than recent average true range; a ₹55 stop is about 1.8 ATR. Neither is automatically safe: locate invalidation first, then size for the distance and possible gaps.",
     interaction: "swing",
     flow: "calculate",
     question: "ATR is ₹31 and you place a ₹20 stop. What have you built?",
@@ -215,7 +215,7 @@ export const swingContent: Record<string, Authored> = {
     takeaway: "Swing stops sit outside one ATR, and preferably at a structural level further out.",
   },
   "APP-SWG-016": {
-    plain: "Entry selection is choosing between a better price and better evidence — you cannot have both.",
+    plain: "Entry selection weighs price, confirmation and the possibility of missing the trade.",
     detail: "Buying the breakout gives the most confirmation and the worst price. Buying the pullback gives a better price and less certainty the move continues. Buying in anticipation gives the best price and the weakest evidence. All three are defensible; picking one and applying it consistently is what makes the results readable.",
     example: "The same setup offers entry at 1,608 on the breakout, 1,575 on the retest, or 1,545 in anticipation. The stop stays at 1,540 in all three, so the risk per share is ₹68, ₹35 or ₹5.",
     interaction: "swing",
@@ -241,9 +241,9 @@ export const swingContent: Record<string, Authored> = {
     takeaway: "Structure sets the stop, the stop sets the size. Reversing that order breaks the risk model.",
   },
   "APP-SWG-018": {
-    plain: "A trailing stop moves up as the trade works, converting an open profit into a floor.",
-    detail: "It tries to stay in a move that keeps going while ensuring a winner does not become a loser. The cost is real: any trail tight enough to protect much profit will also remove you from ordinary pullbacks. Trailing below successive swing lows respects structure better than a fixed percentage does.",
-    example: "Entry 1,595, stop 1,540. Price reaches 1,690 and a new swing low forms at 1,640, so the stop moves there. The trade can no longer lose, and a normal pullback will now end it.",
+    plain: "A trailing stop moves with a favourable price move to reduce planned give-back; it does not guarantee a profit floor.",
+    detail: "A trailing stop seeks to reduce give-back while allowing a move to continue. A tighter trail can exit during an ordinary pullback; a wider trail permits more loss from the peak. Neither guarantees its fill price during a gap or thin market.",
+    example: "Entry 1,595, initial stop 1,540. After a new swing low forms at 1,640, the stop is raised there. A fill at 1,640 would lock in ₹45 before costs; a gap below the entry could still produce a loss.",
     interaction: "swing",
     flow: "judge",
     question: "What does every trailing stop trade away?",
@@ -251,7 +251,7 @@ export const swingContent: Record<string, Authored> = {
     correct: 1,
     correctFeedback: "Correct. Protection and staying power are the two ends of the same dial.",
     incorrectFeedback: "Trailing stops protect profit by exiting earlier. The tighter the protection, the more ordinary pullbacks end the trade.",
-    takeaway: "Trailing stops trade staying power for protection. Trail below structure, not by a fixed percentage.",
+    takeaway: "A higher stop improves the planned exit, not the guaranteed fill.",
   },
   "APP-SWG-019": {
     plain: "A profit target is a price where you have decided in advance to take the money.",
@@ -268,21 +268,21 @@ export const swingContent: Record<string, Authored> = {
   },
   "APP-SWG-020": {
     plain: "Reward-to-risk compares the distance to your target with the distance to your stop.",
-    detail: "It is computed before entry from the two levels the chart gave you, not chosen to look attractive. If the honest numbers produce 1:1, the answer is to skip the trade or find a better entry — not to move the stop closer until the ratio improves.",
-    example: "Entry 1,595, stop 1,540, target 1,705: risk ₹55, reward ₹110, so 1:2. Moving the stop to 1,570 to reach 1:3.7 does not improve the trade; it just guarantees the stop is hit.",
+    detail: "Compute reward-to-risk from a defensible entry, stop and target. Evaluate it together with the method’s win rate, costs and outcome distribution. If it fails your tested minimum, skip or wait; do not move levels solely to improve the ratio.",
+    example: "Entry 1,595, stop 1,540, target 1,705 gives ₹55 planned risk and ₹110 reward: 2:1 reward-to-risk. Moving the stop to 1,570 produces 4.4:1 on paper, but may place it inside ordinary fluctuations.",
     interaction: "expectancy",
     flow: "calculate",
-    question: "Honest levels give you 1:1. What is the disciplined response?",
-    choices: ["Move the stop closer to improve the ratio", "Skip the trade or wait for a better entry", "Widen the target", "Take it anyway with double size"],
-    correct: 1,
+    question: "Your plan requires at least 2:1 reward-to-risk, but this setup offers 1:1. What follows?",
+    choices: ["Double size","Move the stop arbitrarily closer","A 1:1 trade can never be profitable","Skip or wait under this plan"],
+    correct: 3,
     correctFeedback: "Correct. The ratio is an output of the chart. Improving it by moving levels is fiction.",
     incorrectFeedback: "Adjusting levels to reach a nicer ratio changes the arithmetic, not the trade. Skip or wait for a better entry.",
-    takeaway: "Reward-to-risk is computed from the chart's levels. If the honest number is poor, the trade is poor.",
+    takeaway: "Judge the ratio within the tested method, not as a universal profitability test.",
   },
   "APP-SWG-021": {
     plain: "Swing position sizing divides your rupee risk by the distance from entry to stop.",
     detail: "The one addition swing trading makes is that the stop can be jumped by an overnight gap, so the realistic worst case is larger than the calculation suggests. Many swing traders size on the arithmetic and then reduce, treating the planned loss as a floor rather than a maximum.",
-    example: "₹5,00,000 capital, 1% risk is ₹5,000. Risk per share ₹55 gives 90 shares. Allowing for gap risk, 70 shares is the position that survives a bad open.",
+    example: "₹5,00,000 capital with a 1% practice risk budget gives ₹5,000. At ₹55 per share, floor(5,000 ÷ 55) = 90 shares before costs. Taking 70 reduces exposure but does not guarantee survival of a bad gap.",
     interaction: "risk",
     flow: "calculate",
     question: "Capital ₹5,00,000, risk 1%, entry ₹640, stop ₹612. What is the arithmetic size?",

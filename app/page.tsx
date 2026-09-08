@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { LessonTranslation } from "./lesson-translation";
 import { PRODUCT_NAME, allLessons, badges, course, labs, masteryTopics, supportedBlockTypes, type CourseLevel, type Lesson } from "../lib/curriculum";
 import { CandlePatternSim, ChartPatternSim, HorizonSim, RankingSim, ReplaySim, ScreenerSim, SwingSim, WorkflowSim, practicalLabs } from "./practice";
 import { MarketFoundationsVisual } from "./market-foundations";
@@ -118,7 +119,7 @@ function LessonInteractive({ lesson }: { lesson: Lesson }) {
   const [z,setZ] = useState(kind === "candle" ? 96 : kind === "overfitting" ? 55 : 40);
   const [w,setW] = useState(110); const [unseen,setUnseen] = useState(false);
   if (lesson.moduleCode === "WORK") return <TradingWorksVisual key={lesson.id} lessonId={lesson.id}/>;
-  if (["ORD","CHART","HZN","STRUCT","VOL","IND","RISK","PICK"].includes(lesson.moduleCode)) return <FoundationVisual key={lesson.id} lessonId={lesson.id} moduleCode={lesson.moduleCode}/>;
+  if (lesson.levelCode === "FND" && ["ORD","CHART","HZN","STRUCT","VOL","IND","RISK","PICK"].includes(lesson.moduleCode)) return <FoundationVisual key={lesson.id} lessonId={lesson.id} moduleCode={lesson.moduleCode}/>;
   if (["PA","MTF","MOM","MR","DER","FUT","OPT","GRK","OI","STR","PSN"].includes(lesson.moduleCode)) return <AppliedVisual key={lesson.id} lessonId={lesson.id} moduleCode={lesson.moduleCode} title={lesson.title}/>;
   if (lesson.levelCode === "PRO") return <ProfessionalVisual key={lesson.id} lessonId={lesson.id} moduleCode={lesson.moduleCode} title={lesson.title}/>;
   if(kind === "index") { const weights=[50,30,20], companies=[["Company A",x,setX,weights[0],50],["Company B",y,setY,weights[1],55],["Company C",z,setZ,weights[2],40]] as const; const indexMove=companies.reduce((sum,[,value,,,baseline],i)=>sum+(value-baseline)*weights[i]/100,0); return <div className="lesson-sim index-sim"><div className="sim-caption"><b>SIMPLIFIED INDEX</b><span>Weighted move {indexMove>=0?"+":""}{indexMove.toFixed(1)}%</span></div>{companies.map(([name,value,setter,weight,baseline])=><label key={name}><span>{name}<small>{weight}% weight</small></span><input type="range" min={baseline-30} max={baseline+30} value={value} onChange={e=>setter(Number(e.target.value))}/><b>{value-baseline>=0?"+":""}{value-baseline}%</b></label>)}<p>Real indices use published methodologies and many constituents. This model isolates the weighting idea.</p></div> }
@@ -177,7 +178,7 @@ function LessonPage({ lesson, state, setState, openLesson, back }: { lesson: Les
   const choices = lesson.material.choices;
   const correct = lesson.material.correct;
   const sides = lesson.material.sides;
-  const enhancedFoundationVisual = ["ORD","CHART","HZN","STRUCT","VOL","IND","RISK"].includes(lesson.moduleCode);
+  const enhancedFoundationVisual = lesson.levelCode === "FND" && ["ORD","CHART","HZN","STRUCT","VOL","IND","RISK"].includes(lesson.moduleCode);
   // Whichever block asks for an answer gates progress; which one that is depends on the lesson's flow.
   const isCheck = block.type === "quiz" || block.type === "prediction" || block.type === "chart_question";
   // A handful of judgement lessons have no manipulable model — for those the scenario text is the
@@ -288,5 +289,5 @@ export default function Home() {
   function openLesson(item:Lesson){ setLesson(item); setPage("lesson"); setState(current=>({...current,currentLessonId:item.id})); window.scrollTo({top:0,behavior:"smooth"}); }
   function openLab(name:string){ setLab(name); setPage("lab"); window.scrollTo({top:0,behavior:"smooth"}); }
   function finishOnboarding(familiarity:string){ const suggested = familiarity === "Experienced trader" ? "APP-PA-001" : familiarity === "Trade occasionally" ? "FND-RISK-001" : familiarity === "Know the basics" ? "FND-CHART-001" : "FND-MKT-001"; setState(current=>({...current,onboarding:true,familiarity,currentLessonId:suggested})); }
-  return <main className="academy-app"><Sidebar page={page} setPage={setPage} state={state} setMode={setMode} open={navOpen} setOpen={setNavOpen}/><section className="main-workspace"><Header page={page} state={state} setOpen={setNavOpen}/>{page==="home"&&<Dashboard state={state} openLesson={openLesson} setPage={setPage} openLab={openLab}/>} {page==="learn"&&<LearnPage state={state} openLesson={openLesson} openLab={openLab}/>} {page==="lesson"&&<LessonPage key={lesson.id} lesson={lesson} state={state} setState={setState} openLesson={openLesson} back={()=>setPage("learn")}/>} {page==="labs"&&<LabsPage openLab={openLab}/>} {page==="lab"&&<LabView name={lab} back={()=>setPage("labs")}/>} {page==="review"&&<ReviewPage state={state} openLesson={openLesson}/>} {page==="progress"&&<ProgressPage state={state}/>} {page==="content"&&<ContentReview openLesson={openLesson}/>}</section>{loaded&&!state.onboarding&&<Onboarding complete={finishOnboarding}/>}</main>;
+  return <main className="academy-app"><Sidebar page={page} setPage={setPage} state={state} setMode={setMode} open={navOpen} setOpen={setNavOpen}/><section className="main-workspace"><Header page={page} state={state} setOpen={setNavOpen}/>{page==="home"&&<Dashboard state={state} openLesson={openLesson} setPage={setPage} openLab={openLab}/>} {page==="learn"&&<LearnPage state={state} openLesson={openLesson} openLab={openLab}/>} {page==="lesson"&&<LessonTranslation key={`translation-${lesson.id}`} lesson={lesson}/>} {page==="lesson"&&<LessonPage key={lesson.id} lesson={lesson} state={state} setState={setState} openLesson={openLesson} back={()=>setPage("learn")}/>} {page==="labs"&&<LabsPage openLab={openLab}/>} {page==="lab"&&<LabView name={lab} back={()=>setPage("labs")}/>} {page==="review"&&<ReviewPage state={state} openLesson={openLesson}/>} {page==="progress"&&<ProgressPage state={state}/>} {page==="content"&&<ContentReview openLesson={openLesson}/>}</section>{loaded&&!state.onboarding&&<Onboarding complete={finishOnboarding}/>}</main>;
 }

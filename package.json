@@ -12,7 +12,7 @@
     "dev:vercel": "next dev",
     "start:vercel": "next start",
     "start": "vinext start",
-    "test": "npm run build && node --experimental-strip-types --test tests/rendered-html.test.mjs tests/foundation-math.test.mjs tests/foundation-render.test.mjs",
+    "test": "npm run build && node --experimental-strip-types --test tests/rendered-html.test.mjs tests/foundation-math.test.mjs tests/foundation-render.test.mjs tests/advanced-math.test.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate"
   },

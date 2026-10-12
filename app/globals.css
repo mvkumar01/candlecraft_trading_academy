@@ -362,3 +362,34 @@
   .module-status{display:grid}
   .module-status b{display:none}
 }
+
+/* Shared navigation remains readable at every breakpoint and at text zoom. */
+.back-button,
+.lesson-actions > button:first-child,
+.lesson-actions .button-primary,
+.lesson-footer-nav button {
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.5;
+  min-height: 44px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  padding-block: 10px;
+}
+.back-button { text-align: left; }
+.lesson-top { height: auto; min-height: 56px; }
+.lesson-footer-nav { align-items: center; }
+.lesson-footer-nav button { min-width: 0; color: #365347; }
+.lesson-footer-nav button:disabled { color: #6e7c75; opacity: .65; }
+.lesson-footer-nav > span { font-size: .875rem; }
+.lesson-stage h1 { letter-spacing: -.035em; line-height: 1.12; }
+.concept-copy h2,
+.challenge-specific > div:first-child > h2,
+.module-opening blockquote { letter-spacing: -.015em; }
+@media (max-width: 767px) {
+  .lesson-actions { flex-wrap: wrap; }
+  .lesson-actions > button:first-child { flex: 0 1 auto; max-width: 50%; }
+  .lesson-actions .button-primary { flex: 1 1 150px; }
+  .lesson-top { column-gap: 8px; }
+  .lesson-footer-nav { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+}

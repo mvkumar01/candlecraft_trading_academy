@@ -175,6 +175,23 @@ function StepsList({ lesson }: { lesson: Lesson }) {
 function LessonPage({ lesson, state, setState, openLesson, back }: { lesson: Lesson; state: PersistedState; setState: React.Dispatch<React.SetStateAction<PersistedState>>; openLesson: (lesson: Lesson) => void; back: () => void }) {
   const [step, setStep] = useState(0); const [answer, setAnswer] = useState<number|null>(null); const [confidence, setConfidence] = useState(55); const [revealed, setRevealed] = useState(false);
   const index = allLessons.findIndex((item) => item.id === lesson.id); const completed = state.completed.includes(lesson.id); const block = lesson.blocks[step];
+  const level = course.find((item) => item.code === lesson.levelCode)!;
+  const moduleIndex = level.modules.findIndex((item) => item.code === lesson.moduleCode);
+  const currentModule = level.modules[moduleIndex];
+  const moduleComplete = currentModule.lessons.filter((item) => state.completed.includes(item.id)).length;
+  const allModules = course.flatMap((item) => item.modules);
+  const globalModuleIndex = allModules.findIndex((item) => item === currentModule);
+  const moduleQuotes = [
+    { quote: "Risk comes from not knowing what you're doing.", by: "Warren Buffett" },
+    { quote: "The investor's chief problem—and even his worst enemy—is likely to be himself.", by: "Benjamin Graham" },
+    { quote: "Know what you own, and know why you own it.", by: "Peter Lynch" },
+    { quote: "You can't predict. You can prepare.", by: "Howard Marks" },
+    { quote: "The big money is not in the buying and selling, but in the waiting.", by: "Charlie Munger" },
+    { quote: "Respect the market. Have an open mind. Know what to stake. Know when to take a loss. Be responsible.", by: "Rakesh Jhunjhunwala" },
+    { quote: "Invest like a bull, sit like a bear, and watch like an eagle.", by: "Vijay Kedia" },
+    { quote: "Don't focus on making money; focus on protecting what you have.", by: "Paul Tudor Jones" },
+  ];
+  const moduleQuote = moduleQuotes[globalModuleIndex % moduleQuotes.length];
   const choices = lesson.material.choices;
   const correct = lesson.material.correct;
   const sides = lesson.material.sides;
@@ -186,9 +203,9 @@ function LessonPage({ lesson, state, setState, openLesson, back }: { lesson: Les
   const hasSim = lesson.material.interaction !== "scenario";
   function checkReasoning() { setRevealed(true); setState((current) => ({ ...current, answers: {...current.answers,[lesson.id]:answer === correct}, reviewQueue: answer === correct ? current.reviewQueue.filter((id) => id !== lesson.id) : current.reviewQueue.includes(lesson.id) ? current.reviewQueue : [...current.reviewQueue, lesson.id] })); }
   function completeLesson() { setState((current) => { if (current.completed.includes(lesson.id)) return current; const mastery = { ...current.mastery }; lesson.masteryTags.forEach((tag) => mastery[tag] = Math.max(0, Math.min(95, (mastery[tag] ?? 15) + (answer === correct ? 8 : -4)))); return { ...current, completed: [...current.completed, lesson.id], xp: current.xp + lesson.xp, mastery, reviewQueue: answer === correct ? current.reviewQueue.filter((id) => id !== lesson.id) : current.reviewQueue.includes(lesson.id) ? current.reviewQueue : [...current.reviewQueue, lesson.id], currentLessonId: allLessons[index + 1]?.id ?? lesson.id }; }); }
-  return <div className="lesson-view"><div className="lesson-top"><button className="back-button" onClick={back}>← Back to path</button><div className="lesson-progress"><span>LESSON {lesson.order}</span><div><i style={{ width: `${((step + 1)/lesson.blocks.length)*100}%` }}/></div><b>{step + 1} / {lesson.blocks.length}</b></div><span className="lesson-id">{lesson.id}</span></div>
+  return <div className="lesson-view"><div className="lesson-top"><button className="back-button" onClick={back}>← Back to path</button><div className="lesson-progress"><span>LESSON {lesson.order}</span><div><i style={{ width: `${((step + 1)/lesson.blocks.length)*100}%` }}/></div><b>{step + 1} / {lesson.blocks.length}</b></div><div className="module-status"><span>MODULE {moduleIndex + 1} OF {level.modules.length}</span><b>{moduleComplete}/{currentModule.lessons.length} LESSONS</b></div></div>
     <div className="lesson-layout"><aside className="lesson-outline"><span className="kicker">{lesson.level}</span><h3>{lesson.module}</h3>{lesson.blocks.map((item, i) => <button key={i} className={i === step ? "active" : i < step ? "done" : ""} onClick={() => i <= step && setStep(i)}><i>{i < step ? "✓" : i + 1}</i><span>{item.type.replace("_"," ")}</span></button>)}<div className="lesson-tags"><span>MASTERY TAGS</span>{lesson.masteryTags.map((tag) => <b key={tag}>{tag}</b>)}</div></aside>
-      <section className="lesson-stage"><div className="stage-meta"><span>{block.type.replace("_"," ").toUpperCase()}</span><b>{lesson.estimatedMinutes} MIN · +{lesson.xp} XP</b></div><h1>{step === 0 ? lesson.title : block.title}</h1>
+      <section className="lesson-stage">{lesson.order === 1 && step === 0 && <aside className="module-opening"><img src="/og-v2.png" alt="Trading Academy market artwork"/><div><span>BEGIN MODULE {moduleIndex + 1} OF {level.modules.length}</span><blockquote>“{moduleQuote.quote}”</blockquote><cite>— {moduleQuote.by}</cite></div></aside>}<div className="stage-meta"><span>{block.type.replace("_"," ").toUpperCase()}</span><b>{lesson.estimatedMinutes} MIN · +{lesson.xp} XP</b></div><h1>{step === 0 ? lesson.title : block.title}</h1>
         {/* The lesson opens on the plainest true sentence about this concept — no hook, no framing. */}
         {block.type === "text" && <div className="hook-card"><span>IN PLAIN WORDS</span><h2>{block.body}</h2><p>{lesson.module} · {lesson.level}</p></div>}
         {block.type === "visual" && <div className="concept-screen"><div className="concept-copy"><span>A CLOSER LOOK</span><h2>{lesson.title}</h2><p>{lesson.material.detail}</p><div><b>For example</b><span>{lesson.material.example}</span></div></div><LessonInteractive lesson={lesson}/></div>}

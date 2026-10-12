@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { LessonTranslation } from "./lesson-translation";
+import { LanguageChooser, LanguageProvider } from "./languages";
 import { PRODUCT_NAME, allLessons, badges, course, labs, masteryTopics, supportedBlockTypes, type CourseLevel, type Lesson } from "../lib/curriculum";
 import { CandlePatternSim, ChartPatternSim, HorizonSim, RankingSim, ReplaySim, ScreenerSim, SwingSim, WorkflowSim, practicalLabs } from "./practice";
 import { MarketFoundationsVisual } from "./market-foundations";
@@ -73,7 +74,7 @@ function Sidebar({ page, setPage, state, setMode, open, setOpen }: { page: Page;
 
 function Header({ page, state, setOpen }: { page: Page; state: PersistedState; setOpen: (open: boolean) => void }) {
   const labels: Record<Page, string> = { home: "Course dashboard", learn: "Learning path", labs: "Interactive labs", review: "Recommended review", progress: "Your progress", content: "Creator workspace", lesson: "Interactive lesson", lab: "Practice lab" };
-  return <header className="topbar"><button className="menu-button" onClick={() => setOpen(true)} aria-label="Open menu">☰</button><div><span>{labels[page]}</span><b>{PRODUCT_NAME}</b></div><div className="top-stats"><span><i>◆</i><b>7</b><small>day streak</small></span><span><i>✦</i><b>{state.xp}</b><small>XP earned</small></span><button aria-label="Notifications">◌<i /></button></div></header>;
+  return <header className="topbar"><button className="menu-button" onClick={() => setOpen(true)} aria-label="Open menu">☰</button><div><span>{labels[page]}</span><b>{PRODUCT_NAME}</b></div><LanguageChooser isLesson={page==="lesson"}/><div className="top-stats"><span><i>◆</i><b>7</b><small>day streak</small></span><span><i>✦</i><b>{state.xp}</b><small>XP earned</small></span><button aria-label="Notifications">◌<i /></button></div></header>;
 }
 
 function Onboarding({ complete }: { complete: (familiarity: string) => void }) {
@@ -306,5 +307,5 @@ export default function Home() {
   function openLesson(item:Lesson){ setLesson(item); setPage("lesson"); setState(current=>({...current,currentLessonId:item.id})); window.scrollTo({top:0,behavior:"smooth"}); }
   function openLab(name:string){ setLab(name); setPage("lab"); window.scrollTo({top:0,behavior:"smooth"}); }
   function finishOnboarding(familiarity:string){ const suggested = familiarity === "Experienced trader" ? "APP-PA-001" : familiarity === "Trade occasionally" ? "FND-RISK-001" : familiarity === "Know the basics" ? "FND-CHART-001" : "FND-MKT-001"; setState(current=>({...current,onboarding:true,familiarity,currentLessonId:suggested})); }
-  return <main className="academy-app"><Sidebar page={page} setPage={setPage} state={state} setMode={setMode} open={navOpen} setOpen={setNavOpen}/><section className="main-workspace"><Header page={page} state={state} setOpen={setNavOpen}/>{page==="home"&&<Dashboard state={state} openLesson={openLesson} setPage={setPage} openLab={openLab}/>} {page==="learn"&&<LearnPage state={state} openLesson={openLesson} openLab={openLab}/>} {page==="lesson"&&<LessonTranslation key={`translation-${lesson.id}`} lesson={lesson}/>} {page==="lesson"&&<LessonPage key={lesson.id} lesson={lesson} state={state} setState={setState} openLesson={openLesson} back={()=>setPage("learn")}/>} {page==="labs"&&<LabsPage openLab={openLab}/>} {page==="lab"&&<LabView name={lab} back={()=>setPage("labs")}/>} {page==="review"&&<ReviewPage state={state} openLesson={openLesson}/>} {page==="progress"&&<ProgressPage state={state}/>} {page==="content"&&<ContentReview openLesson={openLesson}/>}</section>{loaded&&!state.onboarding&&<Onboarding complete={finishOnboarding}/>}</main>;
+  return <LanguageProvider><main className="academy-app"><Sidebar page={page} setPage={setPage} state={state} setMode={setMode} open={navOpen} setOpen={setNavOpen}/><section className="main-workspace"><Header page={page} state={state} setOpen={setNavOpen}/>{page==="home"&&<Dashboard state={state} openLesson={openLesson} setPage={setPage} openLab={openLab}/>} {page==="learn"&&<LearnPage state={state} openLesson={openLesson} openLab={openLab}/>} {page==="lesson"&&<LessonTranslation key={`translation-${lesson.id}`} lesson={lesson}/>} {page==="lesson"&&<LessonPage key={lesson.id} lesson={lesson} state={state} setState={setState} openLesson={openLesson} back={()=>setPage("learn")}/>} {page==="labs"&&<LabsPage openLab={openLab}/>} {page==="lab"&&<LabView name={lab} back={()=>setPage("labs")}/>} {page==="review"&&<ReviewPage state={state} openLesson={openLesson}/>} {page==="progress"&&<ProgressPage state={state}/>} {page==="content"&&<ContentReview openLesson={openLesson}/>}</section>{loaded&&!state.onboarding&&<Onboarding complete={finishOnboarding}/>}</main></LanguageProvider>;
 }

@@ -2,35 +2,34 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { Lesson } from "../lib/curriculum";
+import { languages, useReadingLanguage } from "./languages";
 
 type TranslatorSession = { translate(text: string): Promise<string>; destroy(): void };
 type TranslatorAPI = {
   availability(options: { sourceLanguage: string; targetLanguage: string }): Promise<string>;
   create(options: { sourceLanguage: string; targetLanguage: string }): Promise<TranslatorSession>;
 };
-const languages = [["en","English"],["hi","हिन्दी · Hindi"],["bn","বাংলা · Bengali"],["mr","मराठी · Marathi"],["ta","தமிழ் · Tamil"],["te","తెలుగు · Telugu"],["kn","ಕನ್ನಡ · Kannada"],["ml","മലയാളം · Malayalam"],["gu","ગુજરાતી · Gujarati"],["ur","اردو · Urdu"],["es","Español · Spanish"]];
 
 /** Translation is a reading aid, never a replacement for quiz IDs, values or logic.
  * No lesson text is sent off-device without the explicit external-link click. */
 export function LessonTranslation({ lesson }: { lesson: Lesson }) {
-  const [language,setLanguage]=useState("en"),[result,setResult]=useState<string[]>([]);
+  const { language } = useReadingLanguage();
+  return <TranslationReader key={`${lesson.id}-${language}`} lesson={lesson} language={language}/>;
+}
+
+function TranslationReader({ lesson, language }: { lesson: Lesson; language: string }) {
+  const [result,setResult]=useState<string[]>([]);
   const [status,setStatus]=useState(""),[busy,setBusy]=useState(false);
+  const [browserTranslator,setBrowserTranslator]=useState(false);
   const request=useRef(0),session=useRef<TranslatorSession|null>(null);
   useEffect(()=>{
-    try { const saved=localStorage.getItem("academy-reading-language");
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      if(languages.some(([code])=>code===saved))setLanguage(saved!);
-    } catch { /* Storage may be disabled; English remains usable. */ }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setBrowserTranslator("Translator" in window);
     // These refs intentionally track the latest async request, not DOM nodes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     return ()=>{request.current++;session.current?.destroy();};
   },[]);
   const parts=[lesson.title,lesson.material.plain,lesson.material.detail,lesson.material.example,lesson.material.question,...lesson.material.choices];
-  function choose(value:string){
-    request.current++;session.current?.destroy();session.current=null;
-    setLanguage(value);setResult([]);setStatus("");setBusy(false);
-    try {localStorage.setItem("academy-reading-language",value);} catch { /* Optional preference. */ }
-  }
   async function translate(){
     const id=++request.current;setBusy(true);setResult([]);
     setStatus("Preparing on-device translation. Your browser may download a language pack.");
@@ -59,12 +58,13 @@ export function LessonTranslation({ lesson }: { lesson: Lesson }) {
     }
   }
   const google=(text:string)=>`https://translate.google.com/?sl=en&tl=${encodeURIComponent(language)}&text=${encodeURIComponent(text)}&op=translate`;
-  return <details className="lesson-translation notranslate" translate="no">
-    <summary>Languages · Read this lesson in another language</summary>
-    <div className="translation-controls"><label htmlFor="reading-language">Reading language</label><select id="reading-language" value={language} onChange={e=>choose(e.target.value)}>{languages.map(([code,label])=><option key={code} value={code}>{label}</option>)}</select>{language!=="en"&&<button onClick={translate} disabled={busy}>{busy?"Translating…":"Translate on this device"}</button>}</div>
-    <p>Machine translation can misread trading terms, negatives and numbers. Compare with English. Your quiz answers, calculations and progress are unchanged.</p>
+  return <details className="lesson-translation notranslate" translate="no" open={language!=="en"}>
+    <summary>{language==="en" ? "Read this lesson in another language" : `Read in ${languages.find(([code])=>code===language)?.[1]}`}</summary>
+    <p>{language==="en"?"Choose a language in the header to translate lesson text.":"Read the explanation, example and quiz text in your chosen language. English activities remain below."}</p>
+    {language!=="en"&&<div className="translation-fallback"><a href={google(parts.slice(0,4).join("\n\n"))} target="_blank" rel="noopener noreferrer">Explanation & example · Google Translate ↗</a><a href={google(parts.slice(4).join("\n\n"))} target="_blank" rel="noopener noreferrer">Question & choices · Google Translate ↗</a><p>Opens in a new tab. Only lesson text is sent to Google; your answers and progress stay here.</p></div>}
+    <div className="translation-controls">{language!=="en"&&browserTranslator&&<button onClick={translate} disabled={busy}>{busy?"Translating…":"Translate in this browser"}</button>}</div>
+    {language!=="en"&&<p>Machine translation: compare important terms and numbers with English.</p>}
     {status&&<p role="status">{status}</p>}
-    {language!=="en"&&<div className="translation-fallback"><p>Google Translate opens in a new tab and receives only the selected lesson text—not your answers or progress.</p><a href={google(parts.slice(0,4).join("\n\n"))} target="_blank" rel="noopener noreferrer">Read explanation and example in Google Translate ↗</a><a href={google(parts.slice(4).join("\n\n"))} target="_blank" rel="noopener noreferrer">Read question and choices in Google Translate ↗</a></div>}
-    {result.length>0&&<article className="translation-reader" lang={language} dir={language==="ur"?"rtl":"ltr"}><h2>{result[0]}</h2>{result.slice(1,4).map((text,i)=><p key={i}>{text}</p>)}<h3>{result[4]}</h3><ol>{result.slice(5).map((text,i)=><li key={i}>{text}</li>)}</ol></article>}
+    {result.length>0&&<article className="translation-reader" lang={language} dir={language==="ur"||language==="sd"?"rtl":"ltr"}><h2>{result[0]}</h2>{result.slice(1,4).map((text,i)=><p key={i}>{text}</p>)}<h3>{result[4]}</h3><ol>{result.slice(5).map((text,i)=><li key={i}>{text}</li>)}</ol></article>}
   </details>;
 }

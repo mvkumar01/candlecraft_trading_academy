@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
-import { Nunito_Sans, Geist_Mono } from "next/font/google";
+import { Nunito_Sans, Geist_Mono, Poppins } from "next/font/google";
 import { headers } from "next/headers";
 import "./globals.css";
+import "./themes.css";
 
 const academySans = Nunito_Sans({ variable: "--font-geist-sans", subsets: ["latin"], display: "swap" });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
+const recykalSans = Poppins({ variable: "--font-recykal", subsets: ["latin"], weight: ["400", "500", "600", "700", "800"], display: "swap" });
 
 export async function generateMetadata(): Promise<Metadata> {
   const requestHeaders = await headers();
@@ -31,5 +33,5 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en"><body className={`${academySans.variable} ${geistMono.variable}`}>{children}</body></html>;
+  return <html lang="en"><body className={`${academySans.variable} ${geistMono.variable} ${recykalSans.variable}`}>{children}</body></html>;
 }

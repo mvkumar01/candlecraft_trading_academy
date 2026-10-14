@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { LessonTranslation } from "./lesson-translation";
 import { LanguageChooser, LanguageProvider } from "./languages";
+import { ThemeChooser } from "./theme-chooser";
 import { PRODUCT_NAME, allLessons, badges, course, labs, masteryTopics, supportedBlockTypes, type CourseLevel, type Lesson } from "../lib/curriculum";
 import { CandlePatternSim, ChartPatternSim, HorizonSim, RankingSim, ReplaySim, ScreenerSim, SwingSim, WorkflowSim, practicalLabs } from "./practice";
 import { MarketFoundationsVisual } from "./market-foundations";
@@ -74,7 +75,7 @@ function Sidebar({ page, setPage, state, setMode, open, setOpen }: { page: Page;
 
 function Header({ page, state, setOpen }: { page: Page; state: PersistedState; setOpen: (open: boolean) => void }) {
   const labels: Record<Page, string> = { home: "Course dashboard", learn: "Learning path", labs: "Interactive labs", review: "Recommended review", progress: "Your progress", content: "Creator workspace", lesson: "Interactive lesson", lab: "Practice lab" };
-  return <header className="topbar"><button className="menu-button" onClick={() => setOpen(true)} aria-label="Open menu">☰</button><div><span>{labels[page]}</span><b>{PRODUCT_NAME}</b></div><LanguageChooser isLesson={page==="lesson"}/><div className="top-stats"><span><i>◆</i><b>7</b><small>day streak</small></span><span><i>✦</i><b>{state.xp}</b><small>XP earned</small></span><button aria-label="Notifications">◌<i /></button></div></header>;
+  return <header className="topbar"><button className="menu-button" onClick={() => setOpen(true)} aria-label="Open menu">☰</button><div><span>{labels[page]}</span><b>{PRODUCT_NAME}</b></div><LanguageChooser isLesson={page==="lesson"}/><div className="top-stats"><span><i>◆</i><b>7</b><small>day streak</small></span><span><i>✦</i><b>{state.xp}</b><small>XP earned</small></span><button aria-label="Notifications">◌<i /></button></div><ThemeChooser/></header>;
 }
 
 function Onboarding({ complete }: { complete: (familiarity: string) => void }) {

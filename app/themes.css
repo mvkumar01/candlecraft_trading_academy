@@ -1,0 +1,77 @@
+/* The default theme inherits the original stylesheet unchanged. */
+.topbar .theme-chooser {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.theme-chooser label { font-size: 14px; font-weight: 700; color: #365347; }
+.theme-chooser select {
+  width: 190px;
+  max-width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--line);
+  padding: 8px 10px;
+  background: var(--white);
+  color: #163025;
+  font-size: 16px;
+}
+@media (max-width: 1199px) {
+  .topbar .theme-chooser { margin-left: auto; }
+}
+@media (max-width: 767px) {
+  .topbar .theme-chooser { order: 5; flex: 1 1 100%; margin-left: 0; }
+  .theme-chooser label { min-width: 66px; }
+  .theme-chooser select { flex: 1; width: auto; min-width: 0; }
+}
+
+/* Recykal-inspired: monochrome surfaces, blue accents, Poppins, softer corners.
+   Market gain/loss colors stay semantic, independently of the visual theme. */
+:root[data-theme="recykal"] {
+  --ink: #05070c;
+  --ink2: #151a23;
+  --ink3: #252d3a;
+  --paper: #f5f7fa;
+  --white: #ffffff;
+  --line: #dce2e9;
+  --muted: #626a78;
+  --lime: #78a9ff;
+  --blue: #005dff;
+}
+[data-theme="recykal"] body {
+  background: var(--paper);
+  color: #131515;
+  font-family: var(--font-recykal), var(--font-geist-sans), sans-serif;
+}
+[data-theme="recykal"] :is(.page-title h1, .welcome-row h1, .lesson-stage h1) { font-weight: 700; letter-spacing: -.035em; }
+[data-theme="recykal"] :is(.page-title h1, .welcome-row h1, .lesson-stage h1, .panel-head h2, .continue-copy h2) { color: #131515; }
+[data-theme="recykal"] :is(.welcome-row h1 em, .page-title h1 em) { color: #131515; border-bottom: 0; font-style: normal; }
+[data-theme="recykal"] :is(.text-button, .panel-head > button) { color: #005dff; }
+[data-theme="recykal"] .lesson-facts span { background: #eaf0f6; color: #343d4b; }
+[data-theme="recykal"] :is(.topbar, .lesson-top, .panel, .module-card, .lesson-translation, .challenge-specific, .concept-card, .continue-copy) { background: #ffffff; color: #131515; }
+[data-theme="recykal"] :is(.panel, .module-card, .lab-card, .continue-card, .lesson-translation, .hook-card, .takeaway-card, .challenge-specific, .concept-card, .module-opening) { border-radius: 12px; }
+[data-theme="recykal"] :is(.continue-card, .module-opening, .challenge-specific, .concept-card) { overflow: hidden; }
+[data-theme="recykal"] :is(button, select, .translation-fallback a) { border-radius: 8px; }
+[data-theme="recykal"] :is(.brand-glyph, .menu-button, .button-primary) { background: #05070c; color: #ffffff; }
+[data-theme="recykal"] .brand-glyph { background: #ffffff; color: #05070c; clip-path: none; }
+[data-theme="recykal"] :is(.brand em, .brand b) { color: #ffffff; }
+[data-theme="recykal"] .button-primary span { color: #ffffff; }
+[data-theme="recykal"] .button-primary:hover { background: #005dff; }
+[data-theme="recykal"] :is(.back-button, .lesson-footer-nav button, .language-chooser label, .theme-chooser label) { color: #343d4b; }
+[data-theme="recykal"] :is(.language-chooser select, .theme-chooser select) { color: #131515; }
+[data-theme="recykal"] :is(.sidebar nav button, .review-entry) { color: #b4bfcd; }
+[data-theme="recykal"] :is(.sidebar nav button.active, .sidebar nav button:hover, .review-entry.active, .review-entry:hover) { background: #202b3e; color: #ffffff; border-left-color: #78a9ff; }
+[data-theme="recykal"] :is(.sidebar-summary, .mode-control, .mode-switch button, .sidebar-rule) { background: #151a23; border-color: #354154; }
+[data-theme="recykal"] .mode-switch button.active { background: #78a9ff; color: #05070c; }
+[data-theme="recykal"] :is(.hook-card, .takeaway-card, .module-opening, .continue-chart, .lesson-sim, .fv-sim, .mf-sim, .work-sim, .app-sim, .pro-sim) { background: #05070c; color: #ffffff; }
+[data-theme="recykal"] :is(.concept-copy > p, .challenge-specific > div:first-child > p, .lesson-outline > button) { color: #535d6b; }
+[data-theme="recykal"] :is(.concept-copy > div, .concept-copy > div span, .stage-meta b, .lesson-tags b) { background: #eaf0f6; color: #343d4b; }
+[data-theme="recykal"] .lesson-outline > button.active { color: #05070c; }
+[data-theme="recykal"] :is(.mf-asset-panel, .mf-flow > div, .fv-result, .pro-result, .work-stage, .model-strip) { background: #151a23; border-color: #354154; color: #eaf0f6; }
+[data-theme="recykal"] :is(.lesson-sim, .fv-sim, .mf-sim, .work-sim, .app-sim, .pro-sim) p { color: #c4cddb; }
+[data-theme="recykal"] :is(.translation-controls button, .translation-fallback a) { color: #ffffff; background: #05070c; border-color: #05070c; }
+[data-theme="recykal"] .translation-fallback a:hover { background: #005dff; }
+[data-theme="recykal"] :is(.translation-reader, .language-hint) { color: #343d4b; }
+[data-theme="recykal"] button:focus-visible,
+[data-theme="recykal"] select:focus-visible,
+[data-theme="recykal"] a:focus-visible { outline: 3px solid #005dff; outline-offset: 3px; }

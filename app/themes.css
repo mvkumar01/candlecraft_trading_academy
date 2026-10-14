@@ -75,3 +75,53 @@
 [data-theme="recykal"] button:focus-visible,
 [data-theme="recykal"] select:focus-visible,
 [data-theme="recykal"] a:focus-visible { outline: 3px solid #005dff; outline-offset: 3px; }
+
+/* Two light-interface alternatives. Trading diagrams keep their dark canvas
+   and semantic gain/loss colors; teaching text uses clean paper surfaces. */
+:root[data-theme="brilliant"] {
+  --ink: #13291e; --ink2: #1c382b; --ink3: #294c39;
+  --paper: #f5f3f1; --white: #ffffff; --line: #e2ded9; --muted: #626660;
+  --lime: #29cc57; --blue: #176c3b;
+  --theme-accent: #167b38; --theme-button: #29cc57; --theme-button-text: #092b13;
+  --theme-active: #e1f6e6; --theme-heading: Georgia, "Times New Roman", serif;
+}
+:root[data-theme="apple"] {
+  --ink: #151518; --ink2: #242429; --ink3: #38383e;
+  --paper: #f5f5f7; --white: #ffffff; --line: #dedee3; --muted: #636368;
+  --lime: #78baff; --blue: #0071e3;
+  --theme-accent: #0066cc; --theme-button: #0071e3; --theme-button-text: #ffffff;
+  --theme-active: #e8f2ff; --theme-heading: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+}
+:is([data-theme="brilliant"], [data-theme="apple"]) body { color: #1d1d1f; }
+[data-theme="apple"] body { font-family: var(--theme-heading); }
+:is([data-theme="brilliant"], [data-theme="apple"]) :is(.welcome-row h1, .page-title h1, .lesson-stage h1) {
+  font-family: var(--theme-heading); color: #1d1d1f; font-weight: 600; letter-spacing: -.025em; line-height: 1.15;
+}
+:is([data-theme="brilliant"], [data-theme="apple"]) :is(.welcome-row h1 em, .page-title h1 em) { color: inherit; font-style: normal; border-bottom: 0; text-decoration: none; background-image: none; box-shadow: none; }
+:is([data-theme="brilliant"], [data-theme="apple"]) :is(.sidebar, .topbar, .lesson-top, .panel, .module-card, .lab-card, .lesson-translation, .continue-copy, .concept-card, .challenge-specific) { background: #ffffff; color: #1d1d1f; }
+:is([data-theme="brilliant"], [data-theme="apple"]) .sidebar { border-right: 1px solid var(--line); }
+:is([data-theme="brilliant"], [data-theme="apple"]) .nav-close { color: #1d1d1f; }
+:is([data-theme="brilliant"], [data-theme="apple"]) :is(.brand b, .brand em, .mode-control > b, .sidebar-summary > b, .user-row b) { color: #1d1d1f; }
+:is([data-theme="brilliant"], [data-theme="apple"]) :is(.sidebar nav button, .review-entry, .mode-switch button) { color: #53545a; }
+:is([data-theme="brilliant"], [data-theme="apple"]) :is(.sidebar nav button.active, .sidebar nav button:hover, .review-entry.active, .review-entry:hover) { color: #1d1d1f; background: var(--theme-active); border-left-color: var(--theme-accent); }
+:is([data-theme="brilliant"], [data-theme="apple"]) :is(.mode-control, .sidebar-summary, .mode-switch button) { background: var(--paper); border-color: var(--line); }
+:is([data-theme="brilliant"], [data-theme="apple"]) .sidebar-rule { background: var(--line); }
+:is([data-theme="brilliant"], [data-theme="apple"]) .sidebar-summary > div { background: #dce1dd; }
+:is([data-theme="brilliant"], [data-theme="apple"]) :is(.brand-glyph, .menu-button, .button-primary, .mode-switch button.active) { background: var(--theme-button); color: var(--theme-button-text); }
+:is([data-theme="brilliant"], [data-theme="apple"]) .brand-glyph { clip-path: none; border-radius: 10px; }
+:is([data-theme="brilliant"], [data-theme="apple"]) .button-primary { border-radius: 999px; padding-inline: 24px; }
+:is([data-theme="brilliant"], [data-theme="apple"]) .button-primary span { color: inherit; }
+:is([data-theme="brilliant"], [data-theme="apple"]) :is(.panel, .module-card, .lab-card, .continue-card, .lesson-translation, .concept-card, .challenge-specific, .hook-card, .takeaway-card) { border-radius: 18px; }
+:is([data-theme="brilliant"], [data-theme="apple"]) :is(.continue-card, .concept-card, .challenge-specific) { overflow: hidden; }
+:is([data-theme="brilliant"], [data-theme="apple"]) :is(select, .menu-button, .sidebar nav button, .mode-switch button) { border-radius: 10px; }
+:is([data-theme="brilliant"], [data-theme="apple"]) :is(.hook-card, .takeaway-card) { color: #1d1d1f; background: #ffffff; border: 1px solid var(--line); border-left: 4px solid var(--theme-accent); }
+:is([data-theme="brilliant"], [data-theme="apple"]) :is(.hook-card > span, .takeaway-card > span) { color: var(--theme-accent); }
+:is([data-theme="brilliant"], [data-theme="apple"]) :is(.hook-card > p, .takeaway-card > p, .concept-copy > p, .challenge-specific > div:first-child > p, .lesson-outline > button) { color: #5a6167; }
+:is([data-theme="brilliant"], [data-theme="apple"]) :is(.concept-copy > div, .concept-copy > div span, .stage-meta b, .lesson-tags b, .lesson-facts span) { background: var(--theme-active); color: #33403a; }
+:is([data-theme="brilliant"], [data-theme="apple"]) :is(.back-button, .lesson-footer-nav button, .text-button, .panel-head > button) { color: var(--theme-accent); }
+:is([data-theme="brilliant"], [data-theme="apple"]) :is(.language-chooser label, .theme-chooser label, .language-chooser select, .theme-chooser select, .lesson-outline > button.active, .module-status span, .module-status b) { color: #1d1d1f; }
+:is([data-theme="brilliant"], [data-theme="apple"]) :is(.translation-controls button, .translation-fallback a) { background: var(--theme-button); color: var(--theme-button-text); border-color: var(--theme-accent); border-radius: 12px; }
+:is([data-theme="brilliant"], [data-theme="apple"]) :is(button, select, a):focus-visible { outline: 3px solid var(--theme-accent); outline-offset: 3px; }
+[data-theme="brilliant"] :is(.panel, .continue-card, .hook-card, .takeaway-card) { box-shadow: 0 3px 0 rgba(45, 58, 39, .07); }
+[data-theme="apple"] :is(.panel, .continue-card, .hook-card, .takeaway-card) { box-shadow: 0 5px 20px rgba(0, 0, 0, .035); }
+[data-theme="apple"] .topbar { background: #fbfbfd; border-color: #ededf0; }
